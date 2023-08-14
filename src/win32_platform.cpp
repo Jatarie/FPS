@@ -7,8 +7,6 @@
 
 #define PI 3.14159265359f
 
-
-
 HWND window_handle;
 
 File ReadEntireFile(char* file){
@@ -48,11 +46,11 @@ struct Program_Memory{
 
 global XINPUT_STATE controller_state;
 global offscreen_buffer backbuffer;
-global bool32 running;
+global b32 running;
 global r32 performance_counter_per_second;
 
-global bool32 recording;
-global bool32 replaying;
+global b32 recording;
+global b32 replaying;
 
 DWORD WINAPI XInputGetStateStub(DWORD dwUserIndex, XINPUT_STATE* pState){
     return 0;
@@ -301,10 +299,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         case WM_SYSKEYDOWN:
         case WM_KEYDOWN:{
 
-            persist bool32 ctrl_down = 0;
-            persist bool32 alt_down = 0;
-            bool32 key_was_down = (((lParam) >> 30) & 1);
-            bool32 key_is_down = !(((lParam) >> 31) & 1);
+            persist b32 ctrl_down = 0;
+            persist b32 alt_down = 0;
+            b32 key_was_down = (((lParam) >> 30) & 1);
+            b32 key_is_down = !(((lParam) >> 31) & 1);
 
             if(wParam == VK_MENU){
                 if(key_is_down){
@@ -373,7 +371,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
     return Result;
 }
 
-void HandleGameInput(Input_Button_State* button_state, bool32 is_down){
+void HandleGameInput(Input_Button_State* button_state, b32 is_down){
     if(is_down){
         if(!button_state->is_down){
             button_state->transition_count += 1;
@@ -438,8 +436,8 @@ void MessageHandler(MSG message, Game_Input* game_input, HWND window_handle){
 
         case WM_KEYDOWN:
         case WM_KEYUP:{
-            bool32 key_was_down = (((message.lParam) >> 30) & 1);
-            bool32 key_is_down = !(((message.lParam) >> 31) & 1);
+            b32 key_was_down = (((message.lParam) >> 30) & 1);
+            b32 key_is_down = !(((message.lParam) >> 31) & 1);
 
             if(message.wParam == 'W'){
                 HandleGameInput(&game_input->move_forward, key_is_down);
@@ -531,8 +529,8 @@ void QueueDeleteAll(Input_Queue* q){
 struct InputRecording{
     void* game_memory_state;
     Input_Queue* input_queue;
-    bool32 first_pass;
-    bool32 init;
+    b32 first_pass;
+    b32 init;
 };
 
 #include "stdio.h"
@@ -617,7 +615,7 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
             QueryPerformanceCounter(&end_counter);
             while(running){
                 PlayWaveFile(&f);
-                secondary_buffer->Play(0, 0, DSBPLAY_LOOPING);
+//                secondary_buffer->Play(0, 0, DSBPLAY_LOOPING);
                 game_input.mouse_diff = {0};
 
                 LoadGameCode();

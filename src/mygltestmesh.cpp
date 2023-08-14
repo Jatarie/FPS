@@ -2,7 +2,6 @@
 #include "mygl.h"
 #include "shader.h"
 #include "maths.h"
-#include "random"
 #include "DataStructures.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -47,12 +46,10 @@ struct Mesh{
     GLuint shader;
 };
 
-
 struct Model{
     u32 mesh_count;
     Mesh** meshes;
 };
-
 
 Mesh* LoadMesh(aiMesh* ai_mesh, mat4 transform){
     Mesh* mesh = (Mesh*)Malloc(sizeof(Mesh));
@@ -221,8 +218,6 @@ void DrawMesh(Mesh* mesh){
 
     glBindVertexArray(mesh->vao);
     glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_INT, 0);
-
-
 }
 
 void TestAssimp(HWND window){

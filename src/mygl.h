@@ -23,6 +23,7 @@ typedef void WINAPI type_glBindBuffer(GLenum target, GLuint buffers);
 typedef void WINAPI type_glBufferData(GLenum target, GLsizeiptr size, const void *data, GLenum usage);
 typedef void WINAPI type_glVertexAttribPointer( GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 typedef void WINAPI type_glEnableVertexAttribArray(GLuint index);
+typedef void WINAPI type_glDisableVertexAttribArray(GLuint index);
 typedef void WINAPI type_glGenerateMipmap(GLenum target);
 typedef GLuint WINAPI type_glCreateShader(GLenum type);
 typedef void WINAPI type_glShaderSource(GLuint shader, GLsizei count, const GLchar *const *string, const GLint *length);
@@ -42,8 +43,6 @@ typedef void WINAPI type_glUniform1i(GLint location, GLint v0);
 typedef void WINAPI type_glUniform1f(GLint location, GLfloat v0);
 typedef void WINAPI type_glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
 typedef void WINAPI type_glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
-// typedef void WINAPI type_glBlendFunc(GLenum sfactor, GLenum dfactor);
-// typedef void WINAPI type_glPixelStorei(GLenum pname, GLuint param);
 typedef BOOL WINAPI type_wglSwapIntervalEXT(int interval);
 
 type_wglSwapIntervalEXT* wglSwapInterval;
@@ -54,6 +53,7 @@ type_glBindBuffer* glBindBuffer;
 type_glBufferData* glBufferData;
 type_glVertexAttribPointer* glVertexAttribPointer;
 type_glEnableVertexAttribArray* glEnableVertexAttribArray;
+type_glDisableVertexAttribArray* glDisableVertexAttribArray;
 type_glGenerateMipmap* glGenerateMipmap;
 type_glCreateShader* glCreateShader;
 type_glShaderSource* glShaderSource;
@@ -73,8 +73,7 @@ type_glUniform1i* glUniform1i;
 type_glUniform1f* glUniform1f;
 type_glUniform3f* glUniform3f;
 type_glUniform4f* glUniform4f;
-// type_glBlendFunc* glBlendFunc;
-// type_glPixelStorei* glPixelStorei;
+
 
 void InitOpenGL(HWND window){
     HDC device_context = GetDC(window);
@@ -105,6 +104,7 @@ void InitOpenGL(HWND window){
     glBufferData = (type_glBufferData*)wglGetProcAddress("glBufferData");
     glVertexAttribPointer = (type_glVertexAttribPointer*)wglGetProcAddress("glVertexAttribPointer");
     glEnableVertexAttribArray = (type_glEnableVertexAttribArray*)wglGetProcAddress("glEnableVertexAttribArray");
+    glDisableVertexAttribArray = (type_glDisableVertexAttribArray*)wglGetProcAddress("glDisableVertexAttribArray");
     glGenerateMipmap = (type_glGenerateMipmap*)wglGetProcAddress("glGenerateMipmap");
     glCreateShader = (type_glCreateShader*)wglGetProcAddress("glCreateShader");
     glShaderSource = (type_glShaderSource*)wglGetProcAddress("glShaderSource");
@@ -124,8 +124,6 @@ void InitOpenGL(HWND window){
     glUniform1f = (type_glUniform1f*)wglGetProcAddress("glUniform1f");
     glUniform3f = (type_glUniform3f*)wglGetProcAddress("glUniform3f");
     glUniform4f = (type_glUniform4f*)wglGetProcAddress("glUniform4f");
-    // glBlendFunc = (type_glBlendFunc*)wglGetProcAddress("glBlendFunc");
-    // glPixelStorei = (type_glPixelStorei*)wglGetProcAddress("glPixelStorei");
     wglSwapInterval = (type_wglSwapIntervalEXT*)wglGetProcAddress("wglSwapIntervalEXT");
 
     glViewport(0, 0, 1280, 720);

@@ -6,38 +6,8 @@
     #define ASSERT(expression)
 #endif
 
-#define internal static 
-#define global  static 
-#define persist static 
 
-#include <stdint.h>
-#define u8 uint8_t
-#define u16 uint16_t
-#define u32 uint32_t
-#define u64 uint64_t
-
-#define s8 int8_t
-#define s16 int16_t
-#define s32 int32_t
-#define s64 int64_t
-
-#define r32 float
-#define r64 double
-
-#define S8MAX 127
-#define S8MIN -128
-
-#define S16MAX 32767
-#define S16MIN -32768
-
-#define S32MAX 2147483647
-#define S32MIN -2147483648
-
-#define U8MAX 255
-#define U16MAX 65535
-#define U32MAX 4294967295
-
-#define bool32 uint32_t
+#define b32 uint32_t
 
 #define MAXIMUM(a, b) a > b ? a : b
 #define MINIMUM(a, b) a < b ? a : b
@@ -68,7 +38,6 @@ struct ColorRGBA{
     r32 g;
     r32 b;
     r32 a;
-
 };
 
 inline ColorRGBA operator*(ColorRGBA a, r32 b){
@@ -207,8 +176,8 @@ struct Game_State{
     HGLRC gl_render_context;
     v3 camera_p;
     v3 camera_dir;
-    r32 yaw;
-    r32 pitch;
+    r32 camera_yaw;
+    r32 camera_pitch;
     v2 client_dimensions;
 
     void* d_memory;
