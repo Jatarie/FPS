@@ -25,52 +25,54 @@ void ShaderCreate(char* vertex_shader_filepath, char* fragment_shader_filepath, 
     }
 
     u32 valid = 1;
-    u32 difference = 0;
+//    u32 difference = 0;
     int success;
 
-    static u32 prev_hash_vertex = 0;
-    static u32 prev_hash_fragment= 0;
+//    static u32 prev_hash_vertex = 0;
+//    static u32 prev_hash_fragment= 0;
+//
+//    static u32 cur_hash_fragment= 0;
+//    cur_hash_fragment= RandomHash((char*)fragment_shader_file.memory);
+//    static u32 cur_hash_vertex = 0;
+//    cur_hash_vertex = RandomHash((char*)vertex_shader_file.memory);
 
-    static u32 cur_hash_fragment= 0;
-    cur_hash_fragment= RandomHash((char*)fragment_shader_file.memory);
-    static u32 cur_hash_vertex = 0;
-    cur_hash_vertex = RandomHash((char*)vertex_shader_file.memory);
-
-    cur_hash_vertex = 1;
-    cur_hash_fragment = 1;
-    prev_hash_vertex = 0;
-    prev_hash_fragment= 0;
-
-    if(cur_hash_fragment == prev_hash_fragment && cur_hash_vertex == prev_hash_vertex){
-        io->FreeEntireFile(fragment_shader_file);
-        io->FreeEntireFile(vertex_shader_file);
-        prev_hash_fragment = cur_hash_fragment;
-        prev_hash_vertex = cur_hash_vertex;
-        return;
-    }
-    prev_hash_fragment = cur_hash_fragment;
-    prev_hash_vertex = cur_hash_vertex;
+//    cur_hash_vertex = 1;
+//    cur_hash_fragment = 1;
+//    prev_hash_vertex = 0;
+//    prev_hash_fragment= 0;
+//
+//    if(cur_hash_fragment == prev_hash_fragment && cur_hash_vertex == prev_hash_vertex){
+//        io->FreeEntireFile(fragment_shader_file);
+//        io->FreeEntireFile(vertex_shader_file);
+//        prev_hash_fragment = cur_hash_fragment;
+//        prev_hash_vertex = cur_hash_vertex;
+//        return;
+//    }
+//    prev_hash_fragment = cur_hash_fragment;
+//    prev_hash_vertex = cur_hash_vertex;
 
     GLuint vertex_shader;
     GLuint fragment_shader;
-    prev_hash_vertex = cur_hash_vertex;
-    difference = 1;
-    prev_hash_vertex = cur_hash_vertex;
+//    prev_hash_vertex = cur_hash_vertex;
+//    difference = 1;
+//    prev_hash_vertex = cur_hash_vertex;
     const char* vertex_shader_source = (char*)vertex_shader_file.memory;
+	GLint size[] = { (GLint)vertex_shader_file.size };
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
+    glShaderSource(vertex_shader, 1, &vertex_shader_source, size);
     glCompileShader(vertex_shader);
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
     if(!success){
         valid = 0;
     }
 
-    prev_hash_fragment = cur_hash_fragment;
-    difference = 1;
-    prev_hash_fragment = cur_hash_fragment;
+//    prev_hash_fragment = cur_hash_fragment;
+//    difference = 1;
+//    prev_hash_fragment = cur_hash_fragment;
     const char* fragment_shader_source = (char*)fragment_shader_file.memory;
+	size[0] = fragment_shader_file.size;
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
+	glShaderSource(fragment_shader, 1, &fragment_shader_source, size);
     glCompileShader(fragment_shader);
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
     if(!success){

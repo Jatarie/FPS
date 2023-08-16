@@ -17,7 +17,8 @@ File ReadEntireFile(char* file){
         LARGE_INTEGER file_size = {0};
         if(GetFileSizeEx( file_handle, &file_size)){
             game_file.size = file_size.QuadPart;
-            game_file.memory = VirtualAlloc(0, game_file.size, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
+//            game_file.memory = VirtualAlloc(0, game_file.size, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
+            game_file.memory = malloc(game_file.size);
             if(ReadFile(file_handle, game_file.memory, game_file.size, 0, NULL)){
             }
         }
@@ -26,7 +27,8 @@ File ReadEntireFile(char* file){
 }
 
 void FreeEntireFile(File game_file){
-    VirtualFree(game_file.memory, 0, MEM_RELEASE);
+//    VirtualFree(game_file.memory, 0, MEM_RELEASE);
+    free(game_file.memory);
 }
 
 
