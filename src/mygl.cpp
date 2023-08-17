@@ -116,7 +116,7 @@ Mesh* MakeCube(){
 	mesh->vertices = (Vertex*)malloc(sizeof(Vertex) * 36);
 	memcpy(mesh->vertices, cube_vertices, sizeof(Vertex) * 36);
 	mesh->vertex_count = 36;
-	mesh->texture.id = LoadTexture("c:/code/FPS/src/test_background.bmp");
+//	mesh->texture.id = LoadTexture("c:/code/FPS/src/test_background.bmp");
 	
 	return mesh;
 }
@@ -193,7 +193,8 @@ RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count){
 	RenderGroup *group = (RenderGroup*)malloc(sizeof(RenderGroup));
 	group->vertex_data = Array(1024);
 	group->format.attrib_count = attrib_count;
-	group->format.attrib_sizes = (u32*)malloc(attrib_count);
+	group->format.attrib_sizes = (u32*)malloc(attrib_count * sizeof(u32));
+	group->shader_program = 0;
 	memcpy(group->format.attrib_sizes, attribs, attrib_count*sizeof(u32));
 	for(int i = 0 ; i < attrib_count; i ++){
 		group->format.vertex_size_bytes += attribs[i] * sizeof(r32);
@@ -219,8 +220,6 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 frame_delta, Game_Inp
 		u32 attribs[] = { 3, 3, 2, 3 };
 		group = CreateRenderGroup(attribs, ARRAYCOUNT(attribs));
 		ShaderCreate("c:/code/fps/src/shaders/cube_vertex.hlsl", "c:/code/fps/src/shaders/cube_fragment.hlsl", &(group->shader_program));
-
-		
 		glGenVertexArrays(1, &(group->vao));
 		glGenBuffers(1, &(group->vbo));
 	}

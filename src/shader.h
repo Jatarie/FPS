@@ -3,6 +3,7 @@
 #include "maths.h"
 #include "mygl.h"
 
+
 u32 RandomHash(char* s){
     char* at = s;
     u32 result = 1;
@@ -57,9 +58,8 @@ void ShaderCreate(char* vertex_shader_filepath, char* fragment_shader_filepath, 
 //    difference = 1;
 //    prev_hash_vertex = cur_hash_vertex;
     const char* vertex_shader_source = (char*)vertex_shader_file.memory;
-	GLint size[] = { (GLint)vertex_shader_file.size };
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_source, size);
+    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
     glCompileShader(vertex_shader);
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
     if(!success){
@@ -70,9 +70,8 @@ void ShaderCreate(char* vertex_shader_filepath, char* fragment_shader_filepath, 
 //    difference = 1;
 //    prev_hash_fragment = cur_hash_fragment;
     const char* fragment_shader_source = (char*)fragment_shader_file.memory;
-	size[0] = fragment_shader_file.size;
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment_shader, 1, &fragment_shader_source, size);
+	glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
     glCompileShader(fragment_shader);
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
     if(!success){
