@@ -464,7 +464,7 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		game_state = (Game_State*)memory.memory;
 		SetMemoryArena( { &(game_state->d_memory), memory.size - (u32)sizeof(Game_State) });
 		game_state->cam.camera_dir = { 0, 0, 1 };
-		game_state->cam.world_p = { 5, 2, 5 };
+		game_state->cam.world_p = { 5, 20, 5 };
 		io = io_in;
 		InitOpenGL(window);
 
