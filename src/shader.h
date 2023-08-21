@@ -4,19 +4,6 @@
 #include "mygl.h"
 
 
-u32 RandomHash(char* s){
-    char* at = s;
-    u32 result = 1;
-    while(*at != '\0'){
-        result *= (*at + 4);
-        result += 17;
-        result *= 13;
-        result /= 3;
-        at++;
-    }
-    return result;
-}
-
 void ShaderCreate(char* vertex_shader_filepath, char* fragment_shader_filepath, GLuint* shader_program){
     File vertex_shader_file = io->ReadEntireFile(vertex_shader_filepath);
     File fragment_shader_file = io->ReadEntireFile(fragment_shader_filepath);
@@ -63,7 +50,10 @@ void ShaderCreate(char* vertex_shader_filepath, char* fragment_shader_filepath, 
     glCompileShader(vertex_shader);
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
     if(!success){
+		char buffer[512];
+		glGetShaderInfoLog(vertex_shader, 512, NULL, buffer);
         valid = 0;
+		__debugbreak();
     }
 
 //    prev_hash_fragment = cur_hash_fragment;
@@ -75,7 +65,10 @@ void ShaderCreate(char* vertex_shader_filepath, char* fragment_shader_filepath, 
     glCompileShader(fragment_shader);
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
     if(!success){
+		char buffer[512];
+		glGetShaderInfoLog(fragment_shader, 512, NULL, buffer);
         valid = 0;
+		__debugbreak();
     }
 
     if(*shader_program){
@@ -87,7 +80,10 @@ void ShaderCreate(char* vertex_shader_filepath, char* fragment_shader_filepath, 
     glLinkProgram(*shader_program);
     glGetProgramiv(*shader_program, GL_LINK_STATUS, &success);
     if(!success){
+		char buffer[512];
+		glGetShaderInfoLog(*shader_program, 512, NULL, buffer);
         valid = 0;
+		__debugbreak();
     }
     glDeleteShader(fragment_shader);
     glDeleteShader(vertex_shader);

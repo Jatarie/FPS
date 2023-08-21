@@ -219,7 +219,7 @@
 
      mat4 projection = CreatePerspectiveMatrix(ToRadians(120.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
 
-     mat4 view = LookAt(game_state->camera_p, game_state->camera_dir + game_state->camera_p);
+     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir+ game_state->cam.world_p);
 
      ShaderSetUniform(shader_program, "model", model);
      ShaderSetUniform(shader_program, "view", view);
@@ -340,7 +340,7 @@
 
      mat4 projection = CreatePerspectiveMatrix(ToRadians(90.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
 
-     mat4 view = LookAt(game_state->camera_p, game_state->camera_dir + game_state->camera_p);
+     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir+ game_state->cam.world_p);
 
 
      v3 light_color = {1, 1, 1};
@@ -366,7 +366,7 @@
      ShaderSetUniform(cube_shader, "model", model);
      ShaderSetUniform(cube_shader, "view", view);
      ShaderSetUniform(cube_shader, "projection", projection);
-     ShaderSetUniform(cube_shader, "camera_pos", game_state->camera_p);
+     ShaderSetUniform(cube_shader, "camera_pos", game_state->cam.world_p);
 
      ShaderSetUniform(cube_shader, "material.ambient", v3{1.0f, 0.5f, 0.31f});
      ShaderSetUniform(cube_shader, "material.diffuse", v3{1.0f, 0.5f, 0.31f});
@@ -385,57 +385,6 @@
      HDC device_context = GetDC(window);
      SwapBuffers(device_context);
      ReleaseDC(window, device_context);
- }
-
- Hash_Table* loaded_textures = NULL;
- GLuint LoadTexture(char* path_to_image){
-     if(!loaded_textures){
-         loaded_textures = loaded_textures->Create(100);
-     }
-
-     GLuint test_if_loaded = loaded_textures->Get(loaded_textures, path_to_image);
-     if(test_if_loaded){
-         return test_if_loaded;
-     }
-	 
-     // Load the image file into memory
-     GLuint texture;
-     int width, height, nrChannels;
-     // stbi_set_flip_vertically_on_load(true);
-     unsigned char *data = stbi_load(path_to_image, &width, &height, &nrChannels, 0);
-
-     // Generate a texture object
-     glGenTextures(1, &texture);
-     glBindTexture(GL_TEXTURE_2D, texture);
-
-     GLuint color_format;
-     if(nrChannels == 1){
-         color_format = GL_RED;
-     }
-     if(nrChannels == 3){
-         color_format = GL_RGB;
-     }
-     if(nrChannels == 4){
-         color_format = GL_RGBA;
-     }
-
-     // Set texture parameters
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-     // Copy the image data to the texture object
-     glTexImage2D(GL_TEXTURE_2D, 0, color_format, width, height, 0, color_format, GL_UNSIGNED_BYTE, data);
-
-     // Generate mipmaps for the texture
-     glGenerateMipmap(GL_TEXTURE_2D);
-
-     // Free the image data from memory
-     stbi_image_free(data);
-
-     loaded_textures->Add(loaded_textures, path_to_image, texture);
-     return texture;
  }
 
  void TestLightingMaps(HWND window){
@@ -548,7 +497,7 @@
 
      mat4 projection = CreatePerspectiveMatrix(ToRadians(90.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
 
-     mat4 view = LookAt(game_state->camera_p, game_state->camera_dir + game_state->camera_p);
+     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir + game_state->cam.world_p);
 
 
      v3 light_color = {1, 1, 1};
@@ -589,7 +538,7 @@
      ShaderSetUniform(cube_shader, "model", model);
      ShaderSetUniform(cube_shader, "view", view);
      ShaderSetUniform(cube_shader, "projection", projection);
-     ShaderSetUniform(cube_shader, "camera_pos", game_state->camera_p);
+     ShaderSetUniform(cube_shader, "camera_pos", game_state->cam.world_p);
 
      ShaderSetUniform(cube_shader, "material.shininess", 32.0f);
 
@@ -715,7 +664,7 @@
 
      mat4 projection = CreatePerspectiveMatrix(ToRadians(90.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
 
-     mat4 view = LookAt(game_state->camera_p, game_state->camera_dir + game_state->camera_p);
+     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir + game_state->cam.world_p);
 
 
      v3 light_color = {1, 1, 1};

@@ -60,22 +60,24 @@ inline ColorRGBA operator*=(ColorRGBA a, r32 b){
     return a;
 };
 
-struct Rectangle{
-    union{
-        v2 bottom_left;
-        struct{
-            r32 left;
-            r32 bottom;
-        };
-    };
-    union{
-        v2 top_right;
-        struct{
-            r32 right;
-            r32 top;
-        };
-    };
-};
+namespace game {
+	struct Rectangle {
+		union {
+			v2 bottom_left;
+			struct {
+				r32 left;
+				r32 bottom;
+			};
+		};
+		union {
+			v2 top_right;
+			struct {
+				r32 right;
+				r32 top;
+			};
+		};
+	};
+}
 
 struct Game_Buffer{
     u32 width;
@@ -172,16 +174,3 @@ struct Memory{
 #include "windows.h"
 #include "gl/GL.h"
 
-struct Game_State{
-    HGLRC gl_render_context;
-    v3 camera_p;
-    v3 camera_dir;
-    r32 camera_yaw;
-    r32 camera_pitch;
-    v2 client_dimensions;
-
-    void* d_memory;
-};
-
-
-static Game_State* game_state;

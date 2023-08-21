@@ -3907,7 +3907,7 @@ typedef int stbrp_coord;
 
 typedef struct
 {
-   int width,height;
+   int width,world_height;
    int x,y,bottom_y;
 } stbrp_context;
 

@@ -1,18 +1,28 @@
 #version 330 core
+
 out vec4 FragColor;
-//in vec2 TexCoord;
-//in vec3 light_pos;
-//in vec3 pos;
-//
-//uniform sampler2D ourTexture;
+
+in float f_textureId;
+in vec2 f_texCoords;
+in vec3 f_normals;
+
+uniform sampler2D u_textures[2];
+//uniform sampler2D u_texture;
 
 void main(){
-//     FragColor = vec4(TexCoord.y, TexCoord.x, 0.0f, 1.0f);
-//     FragColor = texture(ourTexture, TexCoord);// * vec4(color, 1.0f);
-//     FragColor = texture(ourTexture, TexCoord);// * vec4(color, 1.0f);
-//    float distance = sqrt(dot(light_pos, pos));
-    // distance = 6.0f;
-//    FragColor = vec4(0.1, 0.1, distance/10.0f, 1);// * vec4(color, 1.0f);
-
-     FragColor = vec4(0.8, 0.2, 0.3, 1);
+//	switch(int(f_normals.y)){
+//		case 1:{
+//			FragColor = texture(u_textures[0], f_texCoords);
+//		} break;
+//		case -1:{
+//			FragColor = texture(u_textures[0], f_texCoords);
+//		} break;
+//		default:{
+//			FragColor = vec4(1, 0, 1, 1);
+//		}
+//
+//	}
+	FragColor = texture(u_textures[0], f_texCoords);
+//	FragColor = vec4(f_textureId, f_textureId, f_textureId, f_textureId);
+//	FragColor = vec4(f_normals, 1);
 }

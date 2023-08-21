@@ -1,6 +1,185 @@
 #pragma once
 #include "game.h"
+#include "wglext.h"
 #include <gl/gl.h>
+#include "DataStructures.h"
+
+global Game_Input game_input;
+global r32 frame_delta;
+
+enum AttributeTypes{
+	Attribute_vertexPosition,
+	Attribute_worldPosition,
+	Attribute_Normals,
+	Attribute_TextureCoordinates,
+	Attribute_TextureIndex,
+};
+
+struct Vertex{
+    v3 position;
+    v3 normal;
+    v2 texture_coords;
+};
+
+enum TextureType{
+    TextureType_DIFFUSE,
+    TextureType_SPECULAR,
+};
+
+struct Texture{
+    GLuint id;
+    TextureType type;
+};
+
+struct Material{
+    GLuint diffuse;
+    GLuint specular;
+};
+
+struct Mesh {
+	Material material;
+	Texture texture;
+
+	u32 vertex_count;
+	Vertex* vertices;
+
+	u32 index_count;
+	u32* indices;
+};
+
+struct Model{
+    u32 mesh_count;
+    Mesh** meshes;
+};
+
+enum SpriteType{
+	Sprite_DirtTop,
+	Sprite_DirtSide,
+
+	Sprite_FurnaceFront,
+	Sprite_FurnaceBack,
+	Sprite_FurnaceTop,
+	Sprite_FurnaceBottom,
+	Sprite_FurnaceLeft,
+	Sprite_FurnaceRight,
+
+	Sprite_COUNT,
+};
+
+enum Faces{
+	Face_Top,
+	Face_Bottom,
+	Face_Front,
+	Face_Back,
+	Face_Left,
+	Face_Right,
+};
+
+enum BlockType {
+	BlockType_Furnace,
+	BlockType_Dirt,
+
+	BlockType_COUNT
+};
+
+struct Entity{
+	Mesh* mesh;
+	v3 world_p;
+};
+
+struct Block : Entity{
+	BlockType block_type;
+};
+
+struct Camera : Entity{
+    v3 camera_dir;
+    r32 camera_yaw;
+    r32 camera_pitch;
+};
+
+v2 block_map[BlockType_COUNT][6];
+
+
+
+//global v2 sprite_coordinates[32*32];
+
+
+static float cube_vertices[] = {
+	// positions         // normals         // texture coords
+	//BACK
+	0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // TR
+	0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // BR
+	-0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // TL
+	-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // BL
+	-0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // TL
+	0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // BR
+
+	//FRONT
+	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+	0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+	0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+	0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+	-0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+
+	//LEFT
+	-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // TR
+	-0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, //TL
+	-0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // BR
+	-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, //BL
+	-0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // BR
+	-0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, //TL
+
+	//RIGHT
+	0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // TR
+	0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // TL
+	0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // BR
+	0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // BL
+	0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // BR
+	0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // TL
+
+	//DOWN
+	-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+	0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+	0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+	0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+	-0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+
+	//UP
+	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+	0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+	0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+	0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+	-0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
+};
+
+struct VertexDataFormat{
+	u32 vertex_size_bytes;
+	u32 attrib_count;
+	u32* attributes;
+	u32* attribute_sizes;
+};
+
+struct RenderGroup{
+	GLuint vao, vbo, shader_program;
+	Array vertex_data;
+	u32 vertex_data_size;
+	u32 vertex_count;
+	VertexDataFormat format;
+};
+
+struct Game_State{
+	HGLRC gl_render_context;
+	Camera cam;
+	v2 client_dimensions;
+
+	void* d_memory;
+};
+
+
+static Game_State* game_state;
 
 typedef signed long long int khronos_ssize_t;
 typedef khronos_ssize_t GLsizeiptr;
@@ -28,6 +207,7 @@ typedef void WINAPI type_glGenerateMipmap(GLenum target);
 typedef GLuint WINAPI type_glCreateShader(GLenum type);
 typedef void WINAPI type_glShaderSource(GLuint shader, GLsizei count, const GLchar *const *string, const GLint *length);
 typedef void WINAPI type_glCompileShader(GLuint shader);
+typedef void WINAPI type_glGetShaderInfoLog(GLuint shader, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 typedef void WINAPI type_glGetShaderiv(GLuint shader, GLenum pname, GLint *params);
 typedef GLuint WINAPI type_glCreateProgram();
 typedef void WINAPI type_glAttachShader(GLuint program, GLuint shader);
@@ -43,8 +223,10 @@ typedef void WINAPI type_glUniform1i(GLint location, GLint v0);
 typedef void WINAPI type_glUniform1f(GLint location, GLfloat v0);
 typedef void WINAPI type_glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
 typedef void WINAPI type_glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+typedef HGLRC WINAPI type_wglCreateContextAttribsARB (HDC hDC, HGLRC hShareContext, const int *attribList);
 typedef BOOL WINAPI type_wglSwapIntervalEXT(int interval);
 
+type_wglCreateContextAttribsARB* wglCreateContextAttribsARB;
 type_wglSwapIntervalEXT* wglSwapInterval;
 type_glGenVertexArrays* glGenVertexArrays;
 type_glBindVertexArray* glBindVertexArray;
@@ -58,6 +240,7 @@ type_glGenerateMipmap* glGenerateMipmap;
 type_glCreateShader* glCreateShader;
 type_glShaderSource* glShaderSource;
 type_glCompileShader* glCompileShader;
+type_glGetShaderInfoLog* glGetShaderInfoLog;
 type_glGetShaderiv* glGetShaderiv;
 type_glCreateProgram* glCreateProgram;
 type_glAttachShader* glAttachShader;
@@ -90,10 +273,25 @@ void InitOpenGL(HWND window){
     DescribePixelFormat(device_context, suggested_format_index, sizeof(PIXELFORMATDESCRIPTOR), &actual_descriptor);
     SetPixelFormat(device_context, suggested_format_index, &actual_descriptor);
 
+
     if(!game_state->gl_render_context){
         HGLRC render_context = wglCreateContext(device_context);
+
         game_state->gl_render_context = render_context;
         if(wglMakeCurrent(device_context, render_context)){
+			wglCreateContextAttribsARB = (type_wglCreateContextAttribsARB*)wglGetProcAddress("wglCreateContextAttribsARB");
+	
+			int attrib_list[] = {
+								WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+								WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+								WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB|WGL_CONTEXT_DEBUG_BIT_ARB,
+								WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+								0
+			};
+			HGLRC render_context_arb = wglCreateContextAttribsARB(device_context, NULL, attrib_list);
+			if(wglMakeCurrent(device_context, render_context_arb)){
+			}
+			wglDeleteContext(render_context);
         }
     }
 
@@ -109,6 +307,7 @@ void InitOpenGL(HWND window){
     glCreateShader = (type_glCreateShader*)wglGetProcAddress("glCreateShader");
     glShaderSource = (type_glShaderSource*)wglGetProcAddress("glShaderSource");
     glCompileShader = (type_glCompileShader*)wglGetProcAddress("glCompileShader");
+    glGetShaderInfoLog = (type_glGetShaderInfoLog*)wglGetProcAddress("glGetShaderInfoLog");
     glGetShaderiv = (type_glGetShaderiv*)wglGetProcAddress("glGetShaderiv");
     glCreateProgram = (type_glCreateProgram*)wglGetProcAddress("glCreateProgram");
     glAttachShader = (type_glAttachShader*)wglGetProcAddress("glAttachShader");
@@ -140,3 +339,4 @@ void InitOpenGL(HWND window){
 #define GL_TEXTURE7 0x84C7
 #define GL_TEXTURE8 0x84C8
 #define GL_TEXTURE9 0x84C9
+

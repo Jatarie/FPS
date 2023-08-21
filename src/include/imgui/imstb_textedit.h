@@ -511,7 +511,7 @@ static void stb_text_makeundo_replace(STB_TEXTEDIT_STRING *str, STB_TexteditStat
 typedef struct
 {
    float x,y;    // position of n'th character
-   float height; // height of line
+   float world_height; // height of line
    int first_char, length; // first char of row, and length
    int prev_first;  // first char of previous row
 } StbFindState;
