@@ -137,7 +137,6 @@ void MakeBlock(Block* block){
 	block->mesh = mesh;
 }
 
-
 void DrawVertices(RenderGroup *group){
     glBindVertexArray(group->vao);
     glBindBuffer(GL_ARRAY_BUFFER, group->vbo);
@@ -239,6 +238,7 @@ global u32 world_height = 16;
 global u32 world_depth = 16;
 
 void GenerateWorld(Block* world){
+//	TIMED_FUNCTION
 
 	block_map[BlockType_Furnace][Face_Top] = v2 { 6, 8 };
 	block_map[BlockType_Furnace][Face_Bottom] = v2 { 6, 8 };
@@ -254,6 +254,7 @@ void GenerateWorld(Block* world){
 	block_map[BlockType_Dirt][Face_Front] = v2 { 8, 6 };
 	block_map[BlockType_Dirt][Face_Back] = v2 { 8, 6 };
 
+//	TIMED_BLOCK("make")
 	for (u32 y = 0; y < world_height; y++) {
 		for (u32 z = 0; z < world_depth; z++) {
 			for (u32 x = 0; x < world_width; x++) {
@@ -264,7 +265,9 @@ void GenerateWorld(Block* world){
 			}
 		}
 	}
+//	BLOCK_END
 
+//	TIMED_BLOCK("rand")
 	srand(__rdtsc());
 	for(int i = 0 ; i < (world_width * world_height * world_depth); i ++){
 		int j = rand() % (world_width * world_height * world_depth);
@@ -278,11 +281,15 @@ void GenerateWorld(Block* world){
 		world[i] = world[j];
 		world[j] = tmp;
 	}
+//	BLOCK_END
 
 
 	v3 min = { 0 };
 	v3 max = { 0 };
 
+	BVHTree* nodes = (BVHTree*)malloc(sizeof(BVHTree) * world_width * world_height * world_depth);
+
+//	TIMED_BLOCK("tree")
 	for (u32 i = 0; i < world_width*world_height*world_depth; i++) {
 		min = world[i].world_p;
 		min.x -= 0.5f;
@@ -297,9 +304,10 @@ void GenerateWorld(Block* world){
 			bvh_tree = bvh_tree->Init(min , max, 1);
 		}
 		else{
-			bvh_tree->Insert(min, max);
+			bvh_tree->Insert(min, max, &nodes[i]);
 		}
 	}
+//	BLOCK_END
 	Traverse(bvh_tree, 0);
 	DebugOutput("\n\nTree Depth: %d\n\n", max_parents);
 }
@@ -441,11 +449,11 @@ void CameraMove(){
 
 	BVHTree* current = bvh_tree;
 
-	TIMED_BLOCK("Check Collision")
+//	TIMED_BLOCK("Check Collision")
 	if (CheckCollision(&game_state->cam, current)){
 		valid_movement = 0;
 	}
-	BLOCK_END
+//	BLOCK_END
 	if(!valid_movement){
 		game_state->cam.world_p -= normalised_movement;
 	}
@@ -507,59 +515,19 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 //	PushMesh(world[0], group);
-	TIMED_BLOCK("Push Vert")
+//	TIMED_BLOCK("Push Vert")
 	for(int i = 0; i < world_width * world_height * world_depth; i ++){
 		PushMesh(world[i], group);
 	}
-	BLOCK_END
+//	BLOCK_END
 
-	TIMED_BLOCK("Draw Vert")
+//	TIMED_BLOCK("Draw Vert")
 	DrawVertices(group);
-	BLOCK_END
+//	BLOCK_END
 
 	HDC device_context = GetDC(window);
 	SwapBuffers(device_context);
 	ReleaseDC(window, device_context);
-
-	v3 a_min, a_max;
-	v3 b_min, b_max;
-	v3 c_min, c_max;
-	v3 d_min, d_max;
-	v3 e_min, e_max;
-	v3 f_min, f_max;
-
-	a_min = { 0 };
-	a_max = { 1, 1, 1 };
-
-	b_min = { 0, 4, 0 };
-	b_max = { 1, 5, 1 };
-
-	c_min = {4, 0, 0};
-	c_max = { 5, 1, 1 };
-
-	d_min = {4, 4, 0};
-	d_max = { 5, 5, 1 };
-
-	e_min = {7, 0, 0};
-	e_max = { 8, 1, 1 };
-
-	f_min = {7, 4, 0};
-	f_max = { 8, 5, 1 };
-
-
-	r32 composite = CompositeVolume(a_min, a_max, b_min, b_max);
-	r32 volume = Volume(a_min, a_max);
-
-	AVL_Tree* t = (AVL_Tree*)malloc(sizeof(AVL_Tree));
-	*t = { 0 };
-	t->value = 50;
-	t->Insert(30, &t);
-	t->Insert(20, &t);
-	t->Insert(10, &t);
-	t->Insert(15, &t);
-	t->Insert(100, &t);
-	t->Insert(150, &t);
-	t->Insert(75, &t);
 
 }
 
