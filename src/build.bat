@@ -9,9 +9,9 @@ cd c:/code/fps/build
 del *pdb
 
 REM set includes=/I "c:\code\lib**" /I "c:\code\FPS\src\include**" /I "c:\code\FPS\src**" /I "c:\code\FPS\src\include\imgui" /I "c:\code\FPS\src\include\imgui\backends" 
-set includes=/I "c:\code\lib**" /I "c:\code\FPS\src\include**" /I "c:\code\FPS\src**" 
-set includes_win=/I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\ucrt" /I "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.35.32215\include" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\um" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\shared"
-REM C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.35.32215\include
+set includes=/I "c:\code\lib**" /I "c:\code\FPS\src\include**" /I "c:\code\FPS\src**"  /I "c:\code\fps\src\include\glm" /I "c:\code\fps\src\include\glm\gtc"
+set includes_win=/I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\ucrt" /I "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.35.32215\include" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\um" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\shared"  /I "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.35.32215\include" /I"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\include"
+
 
 set LIBS=/LIBPATH:"C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22000.0\um\x64" /LIBPATH:"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\lib\x64" /LIBPATH:"C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22000.0\ucrt\x64" /LIBPATH:"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.35.32215\lib\x64\"
 

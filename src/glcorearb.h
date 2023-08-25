@@ -4721,9 +4721,9 @@ GLAPI void APIENTRY glTexStorage3DEXT (GLenum target, GLsizei levels, GLenum int
 #define GL_WINDOW_RECTANGLE_MODE_EXT      0x8F13
 #define GL_MAX_WINDOW_RECTANGLES_EXT      0x8F14
 #define GL_NUM_WINDOW_RECTANGLES_EXT      0x8F15
-typedef void (APIENTRYP PFNGLWINDOWRECTANGLESEXTPROC) (GLenum mode, GLsizei count, const GLint *box);
+typedef void (APIENTRYP PFNGLWINDOWRECTANGLESEXTPROC) (GLenum mode, GLsizei count, const GLint *Box);
 #ifdef GL_GLEXT_PROTOTYPES
-GLAPI void APIENTRY glWindowRectanglesEXT (GLenum mode, GLsizei count, const GLint *box);
+GLAPI void APIENTRY glWindowRectanglesEXT (GLenum mode, GLsizei count, const GLint *Box);
 #endif
 #endif /* GL_EXT_window_rectangles */
 

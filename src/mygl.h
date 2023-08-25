@@ -163,9 +163,9 @@ struct VertexDataFormat{
 };
 
 struct RenderGroup{
-	GLuint vao, vbo, shader_program;
+	GLuint vao, vbo, shader_program, primitive_mode;
 	Array vertex_data;
-	u32 vertex_data_size;
+	u32 vertex_data_bytes;
 	u32 vertex_count;
 	VertexDataFormat format;
 };

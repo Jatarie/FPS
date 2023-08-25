@@ -23,6 +23,7 @@ void main(){
 //
 //	}
 	FragColor = texture(u_textures[0], f_texCoords);
+//	FragColor = vec4(1, 0, 1, 1);
 //	FragColor = vec4(f_textureId, f_textureId, f_textureId, f_textureId);
 //	FragColor = vec4(f_normals, 1);
 }

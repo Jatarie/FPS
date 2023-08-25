@@ -60,24 +60,28 @@ inline ColorRGBA operator*=(ColorRGBA a, r32 b){
     return a;
 };
 
-namespace game {
-	struct Rectangle {
-		union {
-			v2 bottom_left;
-			struct {
-				r32 left;
-				r32 bottom;
-			};
-		};
-		union {
-			v2 top_right;
-			struct {
-				r32 right;
-				r32 top;
-			};
+struct Rect{
+	union {
+		v2 bottom_left;
+		struct {
+			r32 left;
+			r32 bottom;
 		};
 	};
-}
+	union {
+		v2 top_right;
+		struct {
+			r32 right;
+			r32 top;
+		};
+	};
+};
+
+enum Dimension{
+	Dimension_x,
+	Dimension_y,
+	Dimension_z,
+};
 
 struct Game_Buffer{
     u32 width;

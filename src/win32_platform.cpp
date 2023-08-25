@@ -412,7 +412,7 @@ void MessageHandler(MSG message, Game_Input* game_input, HWND window_handle){
             GetCursorPos(&mouse_coords);
 
             RECT window_rect = {0};
-            GetWindowRect(window_handle, &window_rect);
+            GetClientRect(window_handle, &window_rect);
             u32 mid_x = (window_rect.right+window_rect.left)/2;
             u32 mid_y = (window_rect.bottom + window_rect.top)/2;
 
