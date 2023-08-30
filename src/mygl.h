@@ -2,17 +2,17 @@
 #include "game.h"
 #include "wglext.h"
 #include <gl/gl.h>
-#include "DataStructures.h"
 
 global Game_Input game_input;
 global r32 frame_delta;
 
 enum AttributeTypes{
-	Attribute_vertexPosition,
-	Attribute_worldPosition,
+	Attribute_VertexPosition,
+	Attribute_WorldPosition,
 	Attribute_Normals,
 	Attribute_TextureCoordinates,
 	Attribute_TextureIndex,
+	Attribute_Color,
 };
 
 struct Vertex{
@@ -52,6 +52,11 @@ struct Model{
     Mesh** meshes;
 };
 
+struct Raycast{
+	v3 origin;
+	v3 direction;
+};
+
 enum SpriteType{
 	Sprite_DirtTop,
 	Sprite_DirtSide,
@@ -85,7 +90,11 @@ enum BlockType {
 struct Entity{
 	Mesh* mesh;
 	v3 world_p;
+	r32 velocity;
+	r32 acceleration;
 };
+
+#include "DataStructures.h"
 
 struct Block : Entity{
 	BlockType block_type;
@@ -339,4 +348,5 @@ void InitOpenGL(HWND window){
 #define GL_TEXTURE7 0x84C7
 #define GL_TEXTURE8 0x84C8
 #define GL_TEXTURE9 0x84C9
+
 

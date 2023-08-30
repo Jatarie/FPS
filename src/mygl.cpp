@@ -15,6 +15,7 @@
 //#include "mygltesttext.cpp"
 persist Block world[10000];
 
+
 Hash_Table* loaded_textures = NULL;
 GLuint LoadTexture(char* path_to_image){
 	if(!loaded_textures){
@@ -141,7 +142,8 @@ void MakeBlock(Block* block){
 
 v3 raycast;
 
-void Raycast(mat4 view, mat4 projection){
+void RaycastThing(mat4 view, mat4 projection){
+	TIMED_FUNCTION
 	v4 mouse_coordinates = { 0 };
 	mouse_coordinates.x = (r32)game_input.mouse.x / (r32)game_state->client_dimensions.x;
 	mouse_coordinates.x *= 2;
@@ -155,19 +157,26 @@ void Raycast(mat4 view, mat4 projection){
 	mat4 model = CreateTranslationMatrix(game_state->cam.world_p);
 
 	mat4 inv = model*view*projection;
-	glm::mat4x4 a;
-	glm::vec4 b;
 
-	memcpy(glm::value_ptr(a), &inv, sizeof(r32) * 16);
-	memcpy(glm::value_ptr(b), &mouse_coordinates, sizeof(r32) * 4);
+	mat4 inv_me = MatrixInverse(inv);
+	v4 result_me = Multiply(mouse_coordinates, inv_me);
 
-	a = glm::inverse(a);
+	glm::mat4x4 inv_glm;
+	glm::vec4 result_glm;
+	memcpy(glm::value_ptr(inv_glm), &inv, sizeof(r32) * 16);
+	memcpy(glm::value_ptr(result_glm), &mouse_coordinates, sizeof(r32) * 4);
+	inv_glm = glm::inverse(inv_glm);
 
-	b = a * b;
+	memcpy(&inv, glm::value_ptr(inv_glm), sizeof(r32)*16);
+	result_glm = inv_glm * result_glm;
+//	result_me = Multiply(mouse_coordinates, inv);
 
-	raycast.x = b.x;
-	raycast.y = b.y;
-	raycast.z = b.z;
+
+	raycast.x = result_me.x;
+	raycast.y = result_me.y;
+	raycast.z = result_me.z;
+
+	DebugOutput("%f, %f, %f \n", raycast.x, raycast.y, raycast.z);
 
 }
 
@@ -208,7 +217,7 @@ void DrawVertices(RenderGroup *group){
 	}
     glBindVertexArray(0);
 
-	Raycast(view, projection);
+	RaycastThing(view, projection);
 }
 
 void PushVertexData(r32* data, u32 data_size_bytes, RenderGroup* group){
@@ -217,7 +226,7 @@ void PushVertexData(r32* data, u32 data_size_bytes, RenderGroup* group){
 }
 
 void PushVertexData(r32 data, u32 data_size_bytes, RenderGroup* group){
-	group->vertex_data.Add(data);
+	group->vertex_data.Add(&data);
 	group->vertex_data_bytes += data_size_bytes;
 }
 
@@ -225,7 +234,7 @@ void PushMesh(Entity e, RenderGroup *group){
 	for (int i = 0; i < e.mesh->vertex_count; i++) {
 		for(int a = 0; a < group->format.attrib_count; a++){
 			switch (group->format.attributes[a]){
-				case Attribute_vertexPosition : {
+				case Attribute_VertexPosition : {
 					PushVertexData((r32*)&(e.mesh->vertices[i].position), sizeof(v3), group);
 				} break;
 				case Attribute_Normals: {
@@ -234,7 +243,7 @@ void PushMesh(Entity e, RenderGroup *group){
 				case Attribute_TextureCoordinates: {
 					PushVertexData((r32*)&(e.mesh->vertices[i].texture_coords), sizeof(v2), group);
 				} break;
-				case Attribute_worldPosition: {
+				case Attribute_WorldPosition: {
 					PushVertexData((r32*)&(e.world_p), sizeof(v3), group);
 				} break;
 				case Attribute_TextureIndex: {
@@ -262,12 +271,20 @@ void Traverse(BVHTree* tree, u32 parents){
 		if(parents > max_parents){
 			max_parents = parents;
 		}
-	}
+	}	
+
 
 }
-global u32 world_width = 2;
-global u32 world_height = 2;
-global u32 world_depth = 1;
+global u32 world_width = 64;
+global u32 world_height = 1;
+global u32 world_depth = 64;
+
+float Perlin(v3 in){
+	in.x /= world_width;
+	in.y /= world_height;
+	in.z /= world_depth;
+
+}
 
 void GenerateWorld(Block* world){
 //	TIMED_FUNCTION
@@ -293,14 +310,15 @@ void GenerateWorld(Block* world){
 				u32 index = world_width*world_depth*y + z*world_width + x;
 				world[index].block_type = BlockType_Dirt;
 				MakeBlock(&world[index]);
-				world[index].world_p = { (r32)x, (r32)y, (r32)z };
+				r32 height = sin((2 * 3.1415 * x)/(world_width/2.0f));
+				height += sin((2 * 3.1415 * z)/(world_depth/2.0f));
+				height *= 4;
+
+				world[index].world_p = { (r32)x+.5f, (r32)((s32)height), (r32)z+.5f };
 			}
 		}
 	}
-//	BLOCK_END
-
-//	TIMED_BLOCK("rand")
-	srand(__rdtsc());
+	srand(7);
 	for(int i = 0 ; i < (world_width * world_height * world_depth); i ++){
 		int j = rand() % (world_width * world_height * world_depth);
 		Block tmp = world[i];
@@ -313,7 +331,6 @@ void GenerateWorld(Block* world){
 		world[i] = world[j];
 		world[j] = tmp;
 	}
-//	BLOCK_END
 
 
 	v3 min = { 0 };
@@ -321,7 +338,6 @@ void GenerateWorld(Block* world){
 
 	BVHTree* nodes = (BVHTree*)malloc(sizeof(BVHTree) * world_width * world_height * world_depth);
 
-//	TIMED_BLOCK("tree")
 	for (u32 i = 0; i < world_width*world_height*world_depth; i++) {
 		min = world[i].world_p;
 		min.x -= 0.5f;
@@ -339,14 +355,13 @@ void GenerateWorld(Block* world){
 			bvh_tree->Insert(min, max, &nodes[i], &world[i]);
 		}
 	}
-//	BLOCK_END
 	Traverse(bvh_tree, 0);
 	DebugOutput("\n\nTree Depth: %d\n\n", max_parents);
 }
 
 RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count, char* vertex_shader, char* fragment_shader, GLuint primitive_mode){
 	RenderGroup *group = (RenderGroup*)Malloc(sizeof(RenderGroup));
-	group->vertex_data = Array(1024);
+	group->vertex_data = Array(1024, 4);
 	group->format.attrib_count = attrib_count;
 	group->format.attribute_sizes = (u32*)Malloc(sizeof(u32) * attrib_count);
 	group->format.attributes = (u32*)Malloc(attrib_count * sizeof(u32));
@@ -355,9 +370,10 @@ RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count, char* vertex_shad
 	memcpy(group->format.attributes, attribs, attrib_count*sizeof(u32));
 	for(int i = 0 ; i < attrib_count; i ++){
 		switch(attribs[i]){
-			case Attribute_vertexPosition : 
+			case Attribute_VertexPosition : 
 			case Attribute_Normals: 
-			case Attribute_worldPosition: {
+			case Attribute_WorldPosition:
+			case Attribute_Color: {
 				group->format.vertex_size_bytes += sizeof(v3);
 				group->format.attribute_sizes[i] = 3;
 			} break;
@@ -379,7 +395,7 @@ RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count, char* vertex_shad
 	return group;
 }
 
-void PushRect(RenderGroup* group, Box b, Dimension d) {
+void PushRect(RenderGroup* group, Box b, Dimension d, v3 color){
 	Vertex v[6];
 	v[0] = { 0 };
 	v[1] = { 0 };
@@ -455,45 +471,46 @@ void PushRect(RenderGroup* group, Box b, Dimension d) {
 	}
 
 	for(int v_i = 0; v_i < 6; v_i++){
-		PushVertexData((r32*)&(v[v_i].position), sizeof(v3), group);
+		PushVertexData((r32*)&v[v_i].position, sizeof(v3), group);
+		PushVertexData((r32*)&color, sizeof(v3), group);
 		group->vertex_count++;
 	}
 }
 
-void PushBox(RenderGroup* group, Box b){
+void PushBox(RenderGroup* group, Box b, v3 color){
 	v3 min , max;
 	min = b.min;
 	max = b.max;
 	max.z = min.z;
-	PushRect(group, Box{min, max}, Dimension_z);
+	PushRect(group, Box{min, max}, Dimension_z, color);
 
 	min = b.min;
 	max = b.max;
 	max.y = min.y;
-	PushRect(group, Box{min, max}, Dimension_y);
+	PushRect(group, Box{min, max}, Dimension_y, color);
 
 	min = b.min;
 	max = b.max;
 	max.x = min.x;
-	PushRect(group, Box{min, max}, Dimension_x);
+	PushRect(group, Box{min, max}, Dimension_x, color);
 
 	min = b.min;
 	max = b.max;
 	min.z = max.z;
-	PushRect(group, Box{min, max}, Dimension_z);
+	PushRect(group, Box{min, max}, Dimension_z, color);
 
 	min = b.min;
 	max = b.max;
 	min.y = max.y;
-	PushRect(group, Box{min, max}, Dimension_y);
+	PushRect(group, Box{min, max}, Dimension_y, color);
 
 	min = b.min;
 	max = b.max;
 	min.x = max.x;
-	PushRect(group, Box{min, max}, Dimension_x);
+	PushRect(group, Box{min, max}, Dimension_x, color);
 }
 
-void PushLine(RenderGroup* group ,v3 start, v3 end, r32 thickness){
+void PushLine(RenderGroup* group ,v3 start, v3 end, r32 thickness, v3 color){
 	r32 half_thickness = thickness / 2.0f;
 	v3 diff = start-end;
 
@@ -524,10 +541,10 @@ void PushLine(RenderGroup* group ,v3 start, v3 end, r32 thickness){
 		b.min.x -= half_thickness;
 		b.max.x += half_thickness;
 	}
-	PushBox(group, b);
+	PushBox(group, b, color);
 }
 
-void PushBoxOutline(RenderGroup* group ,Box b, r32 thickness){
+void PushBoxOutline(RenderGroup* group ,Box b, r32 thickness, v3 color){
 	v3 start[12];
 	v3 end[12];
 	for(int i = 0; i < 12; i ++){
@@ -565,12 +582,86 @@ void PushBoxOutline(RenderGroup* group ,Box b, r32 thickness){
 	end[11].y = b.min.y;
 
 	for(int i = 0; i < 12; i++){
-		PushLine(group, start[i], end[i], thickness);
+		PushLine(group, start[i], end[i], thickness, color);
 	}
-
-
 }
 
+b32 CheckCollisionRayFace(r32 b_min_a, r32 b_min_b, r32 b_min_c, r32 b_max_b, r32 b_max_c, r32 ray_direction_a, r32 ray_direction_b, r32 ray_direction_c){
+	r32 diff_a = b_min_a;
+	r32 ratio = diff_a / ray_direction_a;
+	if(ratio < 0.0f){
+		return false;
+	}
+	if(fabs(diff_a) > fabs(ray_direction_a)){
+		return false;
+	}
+	ray_direction_b *= ratio;
+	ray_direction_c *= ratio;
+
+	b32 intersection = true;
+	if(ray_direction_b < b_min_b){
+		intersection = false;
+	}
+	if(ray_direction_b > b_max_b){
+		intersection = false;
+	}
+	if(ray_direction_c < b_min_c){
+		intersection = false;
+	}
+	if(ray_direction_c > b_max_c){
+		intersection = false;
+	}
+	return intersection;
+}
+
+Entity* CheckCollisionRay(Raycast ray, BVHTree* tree){
+	Box b = tree->bounding_box;
+	b.min -= ray.origin;
+	b.max -= ray.origin;
+	b32 collision = false;
+	while(1){
+		collision = CheckCollisionRayFace(b.min.x, b.min.y, b.min.z, b.max.y, b.max.z, ray.direction.x, ray.direction.y, ray.direction.z);
+		if(collision){
+			break;
+		}
+		collision = CheckCollisionRayFace(b.max.x, b.min.y, b.min.z, b.max.y, b.max.z, ray.direction.x, ray.direction.y, ray.direction.z);
+		if(collision){
+			break;
+		}
+		collision = CheckCollisionRayFace(b.min.y, b.min.x, b.min.z, b.max.x, b.max.z, ray.direction.y, ray.direction.x, ray.direction.z);
+		if(collision){
+			break;
+		}
+		collision = CheckCollisionRayFace(b.max.y, b.min.x, b.min.z, b.max.x, b.max.z, ray.direction.y, ray.direction.x, ray.direction.z);
+		if(collision){
+			break;
+		}
+		collision = CheckCollisionRayFace(b.min.z, b.min.x, b.min.y, b.max.x, b.max.y, ray.direction.z, ray.direction.x, ray.direction.y);
+		if(collision){
+			break;
+		}
+		collision = CheckCollisionRayFace(b.max.z, b.min.x, b.min.y, b.max.x, b.max.y, ray.direction.z, ray.direction.x, ray.direction.y);
+		break;
+	}
+
+	Entity* e = NULL;
+	if(collision){
+		e = tree->e;
+		if(tree->left){
+			e = CheckCollisionRay(ray, tree->left);
+			if(e){
+				return e;
+			}
+		}
+		if(tree->right){
+			e = CheckCollisionRay(ray, tree->right);
+			if(e){
+				return e;
+			}
+		}
+	}
+	return e;
+}
 
 Entity* CheckCollision(Entity* a, BVHTree* tree){
 	v3 a_low, a_high;
@@ -585,34 +676,34 @@ Entity* CheckCollision(Entity* a, BVHTree* tree){
 	a_high.z = a->world_p.z;
 
 	b32 collision = 1;
-	if(a_low.x > tree->max.x){
+	if(a_low.x > tree->bounding_box.max.x){
 		collision = 0;
 	}
-	if(a_low.y > tree->max.y){
+	if(a_low.y > tree->bounding_box.max.y){
 		collision =  0;
 	}
-	if(a_low.z > tree->max.z){
+	if(a_low.z > tree->bounding_box.max.z){
 		collision =  0;
 	}
-	if(a_high.x < tree->min.x){
+	if(a_high.x < tree->bounding_box.min.x){
 		collision =  0;
 	}
-	if(a_high.y < tree->min.y){
+	if(a_high.y < tree->bounding_box.min.y){
 		collision =  0;
 	}
-	if(a_high.z < tree->min.z){
+	if(a_high.z < tree->bounding_box.min.z){
 		collision =  0;
 	}
 	if(collision){
-		e = (Entity*)tree->e;
+		e = tree->e;
 		if(tree->left){
-			Entity* e = CheckCollision(a, tree->left);
+			e = CheckCollision(a, tree->left);
 			if(e){
 				return e;
 			}
 		}
 		if(tree->right){
-			Entity* e = CheckCollision(a, tree->right);
+			e = CheckCollision(a, tree->right);
 			if(e){
 				return e;
 			}
@@ -660,11 +751,11 @@ void CameraMove(){
 	
 		if (game_input.mouse_diff.y != 0) {
 			game_state->cam.camera_pitch += (game_input.mouse_diff.y * sensitivity);
-			if (game_state->cam.camera_pitch > 90) {
-				game_state->cam.camera_pitch = 90;
+			if (game_state->cam.camera_pitch > 89.9f) {
+				game_state->cam.camera_pitch = 89.9f;
 			}
-			if (game_state->cam.camera_pitch < -90) {
-				game_state->cam.camera_pitch = -90;
+			if (game_state->cam.camera_pitch < -89.9f) {
+				game_state->cam.camera_pitch = -89.9f;
 			}
 		}
 	
@@ -680,20 +771,38 @@ void CameraMove(){
 	
 	v3 normalised_movement = Normalize(unnormalised_movement) * movement_speed * frame_delta;
 
+//	game_state->cam.velocity = -9.8 * frame_delta + game_state->cam.velocity;
+//	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
+//	normalised_movement.y = normalised_movement.y + delta_y;
+
 	b32 valid_movement = 1;
 	game_state->cam.world_p += normalised_movement;
 
 	BVHTree* current = bvh_tree;
 
-//	TIMED_BLOCK("Check Collision")
 	if (CheckCollision(&game_state->cam, current)){
 		valid_movement = 0;
 	}
-//	BLOCK_END
+
 	if(!valid_movement){
 		game_state->cam.world_p -= normalised_movement;
+		game_state->cam.velocity = 0;
 	}
 }
+
+void DebugCollisionOutlines(RenderGroup* group ,BVHTree* tree, u32 level, v3 color){
+	if(level < 10){
+		Box b = tree->bounding_box;
+		PushBoxOutline(group, b, 0.05f, color);
+	}
+	if(tree->left){
+		DebugCollisionOutlines(group, tree->left, level+1, v3{1, 0, 0});
+	}
+	if(tree->right){
+		DebugCollisionOutlines(group, tree->right, level+1, v3{1, 0, 1});
+	}
+}
+
 
 void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
 //	TIMED_FUNCTION
@@ -716,17 +825,18 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		GenerateWorld(world);
 
 		u32 world_attribs[] = { 
-			Attribute_vertexPosition, 
+			Attribute_VertexPosition, 
 			Attribute_Normals, 
 			Attribute_TextureCoordinates, 
-			Attribute_worldPosition, 
+			Attribute_WorldPosition, 
 			Attribute_TextureIndex
 		};
 
 		group_world = CreateRenderGroup(world_attribs, ARRAYCOUNT(world_attribs), "c:/code/fps/src/shaders/cube_vertex.hlsl", "c:/code/fps/src/shaders/cube_fragment.hlsl", GL_TRIANGLES);
 
 		u32 debug_attribs[] = { 
-			Attribute_vertexPosition,
+			Attribute_VertexPosition,
+			Attribute_Color,
 		};
 		group_debug = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES);
 	}
@@ -749,33 +859,31 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 
 	CameraMove();
 
-	
 	wglSwapInterval(1);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.4f, 0.6f, 0.4f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//	TIMED_BLOCK("Push Vert")
 	for(int i = 0; i < world_width * world_height * world_depth; i ++){
 		PushMesh(world[i], group_world);
 	}
-//	PushBoxOutline(group_debug, Box { v3 { -.5, -.5, -.5 }, v3 { .5, .5, .5 } }, 0.05f);
-//	PushLine(group_debug ,game_state->cam.world_p, game_state->cam.world_p + raycast, 0.05f);
-//	BLOCK_END
 
-	Entity * e;
-	Box b;
-	if(e = CheckCollision(game_state->cam.world_p + raycast, bvh_tree)){
+
+	if (Entity* e = CheckCollisionRay(Raycast{game_state->cam.world_p, raycast*20}, bvh_tree)) {
+		Box b;
 		b.min.x = e->world_p.x - 0.5f;
 		b.min.y = e->world_p.y - 0.5f;
 		b.min.z = e->world_p.z - 0.5f;
 		b.max.x = e->world_p.x + 0.5f;
 		b.max.y = e->world_p.y + 0.5f;
 		b.max.z = e->world_p.z + 0.5f;
-		PushBoxOutline(group_debug, b, 0.05f);
+		PushBoxOutline(group_debug, b, 0.05f, v3{1, 0, 1});
 	}
+
+	DebugCollisionOutlines(group_debug ,bvh_tree, 0 ,v3{1, 0, 1});
+
 
 //	TIMED_BLOCK("Draw Vert")
 	DrawVertices(group_debug);
@@ -786,9 +894,4 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 	SwapBuffers(device_context);
 	ReleaseDC(window, device_context);
 
-//	if(most_recent_collision){
-//		DebugOutput("%f\n", most_recent_collision->world_p.x);
-//	}
-
 }
-
