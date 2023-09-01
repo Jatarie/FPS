@@ -283,7 +283,7 @@ float Perlin(v3 in){
 	in.x /= world_width;
 	in.y /= world_height;
 	in.z /= world_depth;
-
+	return 3.0f;
 }
 
 void GenerateWorld(Block* world){
