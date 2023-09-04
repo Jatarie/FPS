@@ -90,6 +90,7 @@ enum BlockType {
 struct Entity{
 	Mesh* mesh;
 	v3 world_p;
+	Box bounding_box;
 	r32 velocity;
 	r32 acceleration;
 };

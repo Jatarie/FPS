@@ -219,7 +219,7 @@
 
      mat4 projection = CreatePerspectiveMatrix(ToRadians(120.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
 
-     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir+ game_state->cam.world_p);
+     mat4 view = LookAt(test_position, game_state->cam.camera_dir+ test_position);
 
      ShaderSetUniform(shader_program, "model", model);
      ShaderSetUniform(shader_program, "view", view);
@@ -340,7 +340,7 @@
 
      mat4 projection = CreatePerspectiveMatrix(ToRadians(90.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
 
-     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir+ game_state->cam.world_p);
+     mat4 view = LookAt(test_position, game_state->cam.camera_dir+ test_position);
 
 
      v3 light_color = {1, 1, 1};
@@ -366,7 +366,7 @@
      ShaderSetUniform(cube_shader, "model", model);
      ShaderSetUniform(cube_shader, "view", view);
      ShaderSetUniform(cube_shader, "projection", projection);
-     ShaderSetUniform(cube_shader, "camera_pos", game_state->cam.world_p);
+     ShaderSetUniform(cube_shader, "camera_pos", test_position);
 
      ShaderSetUniform(cube_shader, "material.ambient", v3{1.0f, 0.5f, 0.31f});
      ShaderSetUniform(cube_shader, "material.diffuse", v3{1.0f, 0.5f, 0.31f});
@@ -497,7 +497,7 @@
 
      mat4 projection = CreatePerspectiveMatrix(ToRadians(90.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
 
-     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir + game_state->cam.world_p);
+     mat4 view = LookAt(test_position, game_state->cam.camera_dir + test_position);
 
 
      v3 light_color = {1, 1, 1};
@@ -538,7 +538,7 @@
      ShaderSetUniform(cube_shader, "model", model);
      ShaderSetUniform(cube_shader, "view", view);
      ShaderSetUniform(cube_shader, "projection", projection);
-     ShaderSetUniform(cube_shader, "camera_pos", game_state->cam.world_p);
+     ShaderSetUniform(cube_shader, "camera_pos", test_position);
 
      ShaderSetUniform(cube_shader, "material.shininess", 32.0f);
 
@@ -664,7 +664,7 @@
 
      mat4 projection = CreatePerspectiveMatrix(ToRadians(90.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
 
-     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir + game_state->cam.world_p);
+     mat4 view = LookAt(test_position, game_state->cam.camera_dir + test_position);
 
 
      v3 light_color = {1, 1, 1};

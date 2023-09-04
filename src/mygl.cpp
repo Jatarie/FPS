@@ -275,9 +275,9 @@ void Traverse(BVHTree* tree, u32 parents){
 
 
 }
-global u32 world_width = 64;
+global u32 world_width = 1;
 global u32 world_height = 1;
-global u32 world_depth = 64;
+global u32 world_depth = 1;
 
 float Perlin(v3 in){
 	in.x /= world_width;
@@ -309,6 +309,8 @@ void GenerateWorld(Block* world){
 			for (u32 x = 0; x < world_width; x++) {
 				u32 index = world_width*world_depth*y + z*world_width + x;
 				world[index].block_type = BlockType_Dirt;
+				world[index].bounding_box.min = v3 { - .5, - .5, - .5 };
+				world[index].bounding_box.max = v3 { + .5, + .5, + .5 };
 				MakeBlock(&world[index]);
 				r32 height = sin((2 * 3.1415 * x)/(world_width/2.0f));
 				height += sin((2 * 3.1415 * z)/(world_depth/2.0f));
@@ -663,17 +665,18 @@ Entity* CheckCollisionRay(Raycast ray, BVHTree* tree){
 	return e;
 }
 
+
 Entity* CheckCollision(Entity* a, BVHTree* tree){
 	v3 a_low, a_high;
 	Entity* e = NULL;
 
-	a_low.x = a->world_p.x;
-	a_low.y = a->world_p.y;
-	a_low.z = a->world_p.z;
+	a_low.x = a->world_p.x + a->bounding_box.min.x;
+	a_low.y = a->world_p.y + a->bounding_box.min.y;
+	a_low.z = a->world_p.z + a->bounding_box.min.z;
 
-	a_high.x = a->world_p.x;
-	a_high.y = a->world_p.y;
-	a_high.z = a->world_p.z;
+	a_high.x = a->world_p.x + a->bounding_box.max.x;
+	a_high.y = a->world_p.y + a->bounding_box.max.y;
+	a_high.z = a->world_p.z + a->bounding_box.max.z;
 
 	b32 collision = 1;
 	if(a_low.x > tree->bounding_box.max.x){
@@ -712,10 +715,39 @@ Entity* CheckCollision(Entity* a, BVHTree* tree){
 	return e;
 }
 
-Entity* CheckCollision(v3 pos, BVHTree* tree) {
+Entity* CheckCollision(v3 pos, Box bounding_box, BVHTree* tree) {
 	Entity a;
 	a.world_p = pos;
+	a.bounding_box = bounding_box;
 	return CheckCollision(&a, tree);
+}
+
+b32 WithinBounds(Entity* a, Entity* b, Dimension d){
+	if(d == Dimension_x){
+		if((a->world_p.x + a->bounding_box.max.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.max.x) < (b->world_p.x + b->bounding_box.max.x)){
+			return true;
+		}
+		if((a->world_p.x + a->bounding_box.min.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.min.x) < (b->world_p.x + b->bounding_box.max.x)){
+			return true;
+		}
+	}
+	else if(d == Dimension_y){
+		if((a->world_p.y + a->bounding_box.max.y) > (b->world_p.y + b->bounding_box.min.y) && (a->world_p.y + a->bounding_box.max.y) < (b->world_p.y + b->bounding_box.max.y)){
+			return true;
+		}
+		if((a->world_p.y + a->bounding_box.min.y) > (b->world_p.y + b->bounding_box.min.y) && (a->world_p.y + a->bounding_box.min.y) < (b->world_p.y + b->bounding_box.max.y)){
+			return true;
+		}
+	}
+	else if(d == Dimension_z){
+		if((a->world_p.z + a->bounding_box.max.z) > (b->world_p.z + b->bounding_box.min.z) && (a->world_p.z + a->bounding_box.max.z) < (b->world_p.z + b->bounding_box.max.z)){
+			return true;
+		}
+		if((a->world_p.z + a->bounding_box.min.z) > (b->world_p.z + b->bounding_box.min.z) && (a->world_p.z + a->bounding_box.min.z) < (b->world_p.z + b->bounding_box.max.z)){
+			return true;
+		}
+	}
+	return false;
 }
 
 void CameraMove(){
@@ -760,7 +792,7 @@ void CameraMove(){
 		}
 	
 		r32 cos_yaw = cos(ToRadians(game_state->cam.camera_yaw));
-		r32 sin_yaw = sin(ToRadians(game_state->cam.camera_yaw));
+		r32 sin_yaw = sin(ToRadians(game_state->cam.camera_yaw)); 
 		r32 cos_pitch = cos(ToRadians(game_state->cam.camera_pitch));
 		r32 sin_pitch = sin(ToRadians(game_state->cam.camera_pitch));
 		game_state->cam.camera_dir.x = cos_yaw * cos_pitch;
@@ -771,23 +803,78 @@ void CameraMove(){
 	
 	v3 normalised_movement = Normalize(unnormalised_movement) * movement_speed * frame_delta;
 
-//	game_state->cam.velocity = -9.8 * frame_delta + game_state->cam.velocity;
+//	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
 //	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
 //	normalised_movement.y = normalised_movement.y + delta_y;
 
-	b32 valid_movement = 1;
+	b32 valid_movement = true;
+	for (int i = 0; i < 1; i++) {
+
+		v3 test_position = game_state->cam.world_p + normalised_movement;
+		Entity test;
+		test.world_p = test_position;
+		test.bounding_box = game_state->cam.bounding_box;
+
+		BVHTree* current = bvh_tree;
+
+		Entity* collision_entity;
+	
+		if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)) {
+//			if    ((test_position.x) <= ((collision_entity->world_p.x + collision_entity->bounding_box.max.x))){
+//				normalised_movement.x = 0;
+//			}
+//			else if ((test_position.x) >= ((collision_entity->world_p.x + collision_entity->bounding_box.min.x))){
+//				normalised_movement.x = 0;
+//			}
+//			else if ((test_position.y) <= ((collision_entity->world_p.y + collision_entity->bounding_box.max.y))){
+//				normalised_movement.y = 0;
+//			}
+//			else if ((test_position.y) >= ((collision_entity->world_p.y + collision_entity->bounding_box.min.y))){
+//				normalised_movement.y = 0;
+//			}
+//			else if ((test_position.z) <= ((collision_entity->world_p.z + collision_entity->bounding_box.max.z))){
+//				normalised_movement.z = 0;
+//			}
+//			else if ((test_position.z) >= ((collision_entity->world_p.z + collision_entity->bounding_box.min.z))){
+//				normalised_movement.z = 0;
+//			}
+
+			if    (WithinBounds(&test, collision_entity, Dimension_x)){
+				normalised_movement.x = 0;
+			}
+			if    (WithinBounds(&test, collision_entity, Dimension_y)){
+				normalised_movement.y = 0;
+			}
+			if    (WithinBounds(&test, collision_entity, Dimension_z)){
+				normalised_movement.z = 0;
+			}
+		}
+
+//		if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)) {
+//			valid_movement = false;
+//			if    ((test_position.x) > ((collision_entity->world_p.x))){
+//				normalised_movement.x = 0;
+//			}
+//			else if ((test_position.x) < ((collision_entity->world_p.x))){
+//				normalised_movement.x = 0;
+//			}
+//			else if ((test_position.y) > ((collision_entity->world_p.y))){
+//				normalised_movement.y = 0;
+//			}
+//			else if ((test_position.y) < ((collision_entity->world_p.y))){
+//				normalised_movement.y = 0;
+//			}
+//			else if ((test_position.z) > ((collision_entity->world_p.z))){
+//				normalised_movement.z = 0;
+//			}
+//			else if ((test_position.z) < ((collision_entity->world_p.z))){
+//				normalised_movement.z = 0;
+//			}
+//		}
+	}
+//	if(valid_movement){
 	game_state->cam.world_p += normalised_movement;
-
-	BVHTree* current = bvh_tree;
-
-	if (CheckCollision(&game_state->cam, current)){
-		valid_movement = 0;
-	}
-
-	if(!valid_movement){
-		game_state->cam.world_p -= normalised_movement;
-		game_state->cam.velocity = 0;
-	}
+//	}
 }
 
 void DebugCollisionOutlines(RenderGroup* group ,BVHTree* tree, u32 level, v3 color){
@@ -819,6 +906,10 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		SetMemoryArena( { &(game_state->d_memory), memory.size - (u32)sizeof(Game_State) });
 		game_state->cam.camera_dir = { 0, 0, 1 };
 		game_state->cam.world_p = { 5, 20, 5 };
+//		game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
+//		game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
+		game_state->cam.bounding_box.min = v3 { -.5f, -.5f, -.5f };
+		game_state->cam.bounding_box.max = v3 { +.5f, +.5f, +.5f };
 		io = io_in;
 		InitOpenGL(window);
 
@@ -882,7 +973,7 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		PushBoxOutline(group_debug, b, 0.05f, v3{1, 0, 1});
 	}
 
-	DebugCollisionOutlines(group_debug ,bvh_tree, 0 ,v3{1, 0, 1});
+//	DebugCollisionOutlines(group_debug ,bvh_tree, 0 ,v3{1, 0, 1});
 
 
 //	TIMED_BLOCK("Draw Vert")
