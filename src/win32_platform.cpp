@@ -569,7 +569,7 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
 
     LARGE_INTEGER end_counter = {0};
 
-    r32 target_frame_rate = 60;
+    r32 target_frame_rate = 200;
     r32 target_frame_time = 1.0f/target_frame_rate;
     r32 frame_time = 1/target_frame_rate;
     u64 frame_counter = 0;
@@ -617,6 +617,7 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
                 PlayWaveFile(&f);
 //                secondary_buffer->Play(0, 0, DSBPLAY_LOOPING);
                 game_input.mouse_diff = {0};
+				game_input.move_up.transition_count = 0;
 
                 LoadGameCode();
 

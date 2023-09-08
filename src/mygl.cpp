@@ -176,7 +176,7 @@ void RaycastThing(mat4 view, mat4 projection){
 	raycast.y = result_me.y;
 	raycast.z = result_me.z;
 
-	DebugOutput("%f, %f, %f \n", raycast.x, raycast.y, raycast.z);
+//	DebugOutput("%f, %f, %f \n", raycast.x, raycast.y, raycast.z);
 
 }
 
@@ -272,12 +272,11 @@ void Traverse(BVHTree* tree, u32 parents){
 			max_parents = parents;
 		}
 	}	
-
-
 }
-global u32 world_width = 1;
+
+global u32 world_width = 64;
 global u32 world_height = 1;
-global u32 world_depth = 1;
+global u32 world_depth = 64;
 
 float Perlin(v3 in){
 	in.x /= world_width;
@@ -313,14 +312,13 @@ void GenerateWorld(Block* world){
 				world[index].bounding_box.max = v3 { + .5, + .5, + .5 };
 				MakeBlock(&world[index]);
 				r32 height = sin((2 * 3.1415 * x)/(world_width/2.0f));
-				height += sin((2 * 3.1415 * z)/(world_depth/2.0f));
-				height *= 4;
+				height += 2 * sin((2 * 3.1415 * z)/(world_depth/2.0f));
 
 				world[index].world_p = { (r32)x+.5f, (r32)((s32)height), (r32)z+.5f };
 			}
 		}
 	}
-	srand(7);
+	srand(100);
 	for(int i = 0 ; i < (world_width * world_height * world_depth); i ++){
 		int j = rand() % (world_width * world_height * world_depth);
 		Block tmp = world[i];
@@ -803,78 +801,39 @@ void CameraMove(){
 	
 	v3 normalised_movement = Normalize(unnormalised_movement) * movement_speed * frame_delta;
 
-//	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
-//	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
-//	normalised_movement.y = normalised_movement.y + delta_y;
+	if(game_input.move_up.is_down && game_input.move_up.transition_count == 1){
+		game_state->cam.velocity = 5.0f;
+	}
+
+	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
+	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
+	normalised_movement.y = normalised_movement.y + delta_y;
 
 	b32 valid_movement = true;
-	for (int i = 0; i < 1; i++) {
 
-		v3 test_position = game_state->cam.world_p + normalised_movement;
-		Entity test;
-		test.world_p = test_position;
-		test.bounding_box = game_state->cam.bounding_box;
+	BVHTree* current = bvh_tree;
 
-		BVHTree* current = bvh_tree;
+	Entity* collision_entity;
 
-		Entity* collision_entity;
-	
-		if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)) {
-//			if    ((test_position.x) <= ((collision_entity->world_p.x + collision_entity->bounding_box.max.x))){
-//				normalised_movement.x = 0;
-//			}
-//			else if ((test_position.x) >= ((collision_entity->world_p.x + collision_entity->bounding_box.min.x))){
-//				normalised_movement.x = 0;
-//			}
-//			else if ((test_position.y) <= ((collision_entity->world_p.y + collision_entity->bounding_box.max.y))){
-//				normalised_movement.y = 0;
-//			}
-//			else if ((test_position.y) >= ((collision_entity->world_p.y + collision_entity->bounding_box.min.y))){
-//				normalised_movement.y = 0;
-//			}
-//			else if ((test_position.z) <= ((collision_entity->world_p.z + collision_entity->bounding_box.max.z))){
-//				normalised_movement.z = 0;
-//			}
-//			else if ((test_position.z) >= ((collision_entity->world_p.z + collision_entity->bounding_box.min.z))){
-//				normalised_movement.z = 0;
-//			}
 
-			if    (WithinBounds(&test, collision_entity, Dimension_x)){
-				normalised_movement.x = 0;
-			}
-			if    (WithinBounds(&test, collision_entity, Dimension_y)){
-				normalised_movement.y = 0;
-			}
-			if    (WithinBounds(&test, collision_entity, Dimension_z)){
-				normalised_movement.z = 0;
-			}
-		}
-
-//		if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)) {
-//			valid_movement = false;
-//			if    ((test_position.x) > ((collision_entity->world_p.x))){
-//				normalised_movement.x = 0;
-//			}
-//			else if ((test_position.x) < ((collision_entity->world_p.x))){
-//				normalised_movement.x = 0;
-//			}
-//			else if ((test_position.y) > ((collision_entity->world_p.y))){
-//				normalised_movement.y = 0;
-//			}
-//			else if ((test_position.y) < ((collision_entity->world_p.y))){
-//				normalised_movement.y = 0;
-//			}
-//			else if ((test_position.z) > ((collision_entity->world_p.z))){
-//				normalised_movement.z = 0;
-//			}
-//			else if ((test_position.z) < ((collision_entity->world_p.z))){
-//				normalised_movement.z = 0;
-//			}
-//		}
+	v3 test_position = game_state->cam.world_p;
+	test_position.x += normalised_movement.x;
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+		test_position.x -= normalised_movement.x;
 	}
-//	if(valid_movement){
-	game_state->cam.world_p += normalised_movement;
-//	}
+	test_position.y += normalised_movement.y;
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+		test_position.y -= normalised_movement.y;
+		game_state->cam.velocity = 0;
+	}
+	test_position.z += normalised_movement.z;
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+		test_position.z -= normalised_movement.z;
+	}
+
+	game_state->cam.world_p = test_position;
+
+	
 }
 
 void DebugCollisionOutlines(RenderGroup* group ,BVHTree* tree, u32 level, v3 color){
@@ -908,8 +867,8 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		game_state->cam.world_p = { 5, 20, 5 };
 //		game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
 //		game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
-		game_state->cam.bounding_box.min = v3 { -.5f, -.5f, -.5f };
-		game_state->cam.bounding_box.max = v3 { +.5f, +.5f, +.5f };
+		game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
+		game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
 		io = io_in;
 		InitOpenGL(window);
 
