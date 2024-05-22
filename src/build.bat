@@ -6,7 +6,7 @@ REM IF "%myINIT%" == "" call vcvarsall.bat x64 && set myINIT=1
 
 cd c:/code/fps/build
 
-del *pdb
+	del *pdb
 
 REM set includes=/I "c:\code\lib**" /I "c:\code\FPS\src\include**" /I "c:\code\FPS\src**" /I "c:\code\FPS\src\include\imgui" /I "c:\code\FPS\src\include\imgui\backends" 
 set includes=/I "c:\code\lib**" /I "c:\code\FPS\src\include**" /I "c:\code\FPS\src**"  /I "c:\code\fps\src\include\glm" /I "c:\code\fps\src\include\glm\gtc"
