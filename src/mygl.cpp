@@ -142,7 +142,7 @@ void MakeBlock(Block* block){
 
 v3 raycast;
 
-void RaycastThing(mat4 view, mat4 projection){
+void RaycastThing(mat4 view, mat4 projection){ 	
 	TIMED_FUNCTION
 	v4 mouse_coordinates = { 0 };
 	mouse_coordinates.x = (r32)game_input.mouse.x / (r32)game_state->client_dimensions.x;
@@ -156,27 +156,12 @@ void RaycastThing(mat4 view, mat4 projection){
 
 	mat4 model = CreateTranslationMatrix(game_state->cam.world_p);
 
-	mat4 inv = model*view*projection;
+	mat4 inv = MatrixInverse(model*view*projection);
+	v4 result = Multiply(mouse_coordinates, inv);
 
-	mat4 inv_me = MatrixInverse(inv);
-	v4 result_me = Multiply(mouse_coordinates, inv_me);
-
-	glm::mat4x4 inv_glm;
-	glm::vec4 result_glm;
-	memcpy(glm::value_ptr(inv_glm), &inv, sizeof(r32) * 16);
-	memcpy(glm::value_ptr(result_glm), &mouse_coordinates, sizeof(r32) * 4);
-	inv_glm = glm::inverse(inv_glm);
-
-	memcpy(&inv, glm::value_ptr(inv_glm), sizeof(r32)*16);
-	result_glm = inv_glm * result_glm;
-//	result_me = Multiply(mouse_coordinates, inv);
-
-
-	raycast.x = result_me.x;
-	raycast.y = result_me.y;
-	raycast.z = result_me.z;
-
-//	DebugOutput("%f, %f, %f \n", raycast.x, raycast.y, raycast.z);
+	raycast.x = result.x;
+	raycast.y = result.y;
+	raycast.z = result.z;
 
 }
 
@@ -194,7 +179,7 @@ void DrawVertices(RenderGroup *group){
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    mat4 projection = CreatePerspectiveMatrix(ToRadians(90.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
+    mat4 projection = CreatePerspectiveMatrix(ToRadians(100.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir + game_state->cam.world_p);
 
 	glUseProgram(group->shader_program);
@@ -920,7 +905,6 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		PushMesh(world[i], group_world);
 	}
 
-
 	if (Entity* e = CheckCollisionRay(Raycast{game_state->cam.world_p, raycast*20}, bvh_tree)) {
 		Box b;
 		b.min.x = e->world_p.x - 0.5f;
@@ -932,8 +916,7 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		PushBoxOutline(group_debug, b, 0.05f, v3{1, 0, 1});
 	}
 
-//	DebugCollisionOutlines(group_debug ,bvh_tree, 0 ,v3{1, 0, 1});
-
+	//DebugCollisionOutlines(group_debug, bvh_tree, 0, v3{1, 0, 1});
 
 //	TIMED_BLOCK("Draw Vert")
 	DrawVertices(group_debug);

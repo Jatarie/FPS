@@ -9,21 +9,22 @@
 
 HWND window_handle;
 
-File ReadEntireFile(char* file){
-    File game_file = {0};
-    HANDLE file_handle = CreateFileA( file, GENERIC_READ, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    DWORD error_code = GetLastError();
-    if(error_code == 0){
-        LARGE_INTEGER file_size = {0};
-        if(GetFileSizeEx( file_handle, &file_size)){
-            game_file.size = file_size.QuadPart;
-            game_file.memory = VirtualAlloc(0, game_file.size, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
-            if(ReadFile(file_handle, game_file.memory, game_file.size, 0, NULL)){
-            }
-        }
-    }
-    return game_file;
+File ReadEntireFile(char* file) {
+	File game_file = { 0 };
+	HANDLE file_handle = CreateFileA(file, GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	DWORD error_code = GetLastError();
+	if (error_code == 0) {
+		LARGE_INTEGER file_size = { 0 };
+		if (GetFileSizeEx(file_handle, &file_size)) {
+			game_file.size = file_size.QuadPart;
+			game_file.memory = VirtualAlloc(0, game_file.size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+			if (ReadFile(file_handle, game_file.memory, game_file.size, 0, NULL)) {
+			}
+		}
+	}
+	return game_file;
 }
+
 
 void FreeEntireFile(File game_file){
     VirtualFree(game_file.memory, 0, MEM_RELEASE);
@@ -331,15 +332,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     running = false;
                 }
             }
-            else if (wParam == 'J'){
+            else if (wParam == 'J' && uMsg == WM_KEYDOWN){
                 replaying = 0;
                 recording = !recording;
             }
-            else if (wParam == 'K'){
+            else if (wParam == 'K' && uMsg == WM_KEYDOWN){
                 recording = 0;
                 replaying = !replaying;
             }
-            else if(wParam == 'L'){
+            else if(wParam == 'L' && uMsg == WM_KEYDOWN){
                 recording = 0;
                 replaying = 0;
             }
@@ -569,7 +570,7 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
 
     LARGE_INTEGER end_counter = {0};
 
-    r32 target_frame_rate = 200;
+    r32 target_frame_rate = 120;
     r32 target_frame_time = 1.0f/target_frame_rate;
     r32 frame_time = 1/target_frame_rate;
     u64 frame_counter = 0;
@@ -679,7 +680,7 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
 
                 if(frame_counter % (u32)target_frame_rate == 0){
                     char buf[255];
-                    sprintf(buf, "Frame time %.1f -- FPS %.1f\n", frame_time*1000, 1.0f/frame_time);
+                    sprintf(buf, "Frame time %.1f -- FPS %.1f %d %d\n", frame_time*1000, 1.0f/frame_time, recording, replaying);
                     SetWindowTextA(window_handle, buf);
                     OutputDebugStringA(buf);
                 }
@@ -690,6 +691,9 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
                 RECT client_rect;
                 GetClientRect( window_handle, &client_rect);
 
+				if(frame_time > 1.0f/60.0f){
+					frame_time = 1.0f / 60.0f;
+				}
                 RenderGame(window_handle, &io, memory, frame_time, game_input, client_rect);
                 ReleaseDC(window_handle, device_context);
 
@@ -703,7 +707,6 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
                     QueryPerformanceCounter(&start_counter);
                     frame_time = CounterDifferenceInSeconds(start_counter, end_counter);
                 }
-
                 QueryPerformanceCounter(&end_counter);
             }
         }

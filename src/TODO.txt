@@ -1,0 +1,8 @@
+TODO:
+
+Text on screen (recording, replaying etc)
+Frame rate graph for fun.
+Editor stuff, click on object in world, change the color real time.
+Level editor, save changes made in game to disk
+Fix Raycasting thing
+Save to github n shit

@@ -6,6 +6,7 @@
 		<SyncFiles>true</SyncFiles>
 		<Recursive>true</Recursive>
 		<ShowEmptyFolders>true</ShowEmptyFolders>
+		<IncludeFilesWithoutExt>false</IncludeFilesWithoutExt>
 		<IsVirtual>false</IsVirtual>
 		<IsFolder>false</IsFolder>
 		<BuildCommand>c:/code/fps/src/build.bat</BuildCommand>
@@ -16,7 +17,7 @@
 		<CancelBuild></CancelBuild>
 		<RunCommand></RunCommand>
 		<RunCommandWorkingDirectory></RunCommandWorkingDirectory>
-		<DebugCommand>c:/code/haversine/RemedyBG.exe start-debugging</DebugCommand>
+		<DebugCommand>C:\code\Haversine\remedybg.exe c:/code/FPS/build/rmdy.rdbg</DebugCommand>
 		<ExePathCommand>C:/code/FPS/build/win32_platform.exe</ExePathCommand>
 		<DebugSln></DebugSln>
 		<UseVisualStudioEnvBat>false</UseVisualStudioEnvBat>
@@ -37,6 +38,8 @@
 			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\winrt</AdditionalIncludePath>
 			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\cppwinrt</AdditionalIncludePath>
 			<AdditionalIncludePath>c:\code\lib</AdditionalIncludePath>
+			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\bin\Hostx64\x64\</AdditionalIncludePath>
+			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\include</AdditionalIncludePath>
 		</AdditionalIncludePaths>
 		<Defines></Defines>
 		<ConfigProperties>
