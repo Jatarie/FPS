@@ -146,9 +146,9 @@ namespace detail
 			p = vpaddq_f32(p, p);
 			p = vpaddq_f32(p, p);
 #else
-			float32x2_t t = vpadd_f32(vget_low_f32(p), vget_high_f32(p));
-			t = vpadd_f32(t, t);
-			p = vcombine_f32(t, t);
+			float32x2_t octtree = vpadd_f32(vget_low_f32(p), vget_high_f32(p));
+			octtree = vpadd_f32(octtree, octtree);
+			p = vcombine_f32(octtree, octtree);
 #endif
 
 			float32x4_t vd = vrsqrteq_f32(p);

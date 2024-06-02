@@ -16,7 +16,6 @@
 
 //#include "mygltest.cpp"
 //#include "mygltesttext.cpp"
-persist Block world[10000];
 
 
 Hash_Table* loaded_textures = NULL;
@@ -246,6 +245,7 @@ void PushMesh(Entity e, RenderGroup *group){
 }
 
 global BVHTree* bvh_tree;
+global OctTree* octtree;
 
 u32 max_parents = 0;
 
@@ -278,7 +278,6 @@ float Perlin(v3 in){
 
 void GenerateWorld(Block* world){
 	TIMED_FUNCTION
-//	TIMED_FUNCTION
 
 	block_map[BlockType_Furnace][Face_Top] = v2 { 6, 8 };
 	block_map[BlockType_Furnace][Face_Bottom] = v2 { 6, 8 };
@@ -294,7 +293,12 @@ void GenerateWorld(Block* world){
 	block_map[BlockType_Dirt][Face_Front] = v2 { 8, 6 };
 	block_map[BlockType_Dirt][Face_Back] = v2 { 8, 6 };
 
-//	TIMED_BLOCK("make")
+	Box b;
+	b.min = v3{-100, -100, -100};
+	b.max = v3{100, 100, 100};
+	octtree = (OctTree*)Malloc(sizeof(OctTree));
+	octtree->Init(4, b);
+
 	for (u32 y = 0; y < world_height; y++) {
 		for (u32 z = 0; z < world_depth; z++) {
 			for (u32 x = 0; x < world_width; x++) {
@@ -307,47 +311,50 @@ void GenerateWorld(Block* world){
 				height += 2 * sin((2 * 3.1415 * z)/(world_depth/2.0f));
 
 				world[index].world_p = { (r32)x+.5f, (r32)((s32)height), (r32)z+.5f };
+
+				octtree->Insert(&world[index]);
 			}
 		}
 	}
-	srand(100);
-	for(int i = 0 ; i < (world_width * world_height * world_depth); i ++){
-		int j = rand() % (world_width * world_height * world_depth);
-		Block tmp = world[i];
-		if(!world[i].mesh ){
-			int p = 4;
-		}
-		if(!world[j].mesh ){
-			int p = 4;
-		}
-		world[i] = world[j];
-		world[j] = tmp;
-	}
+
+//	srand(100);
+//	for(int i = 0 ; i < (world_width * world_height * world_depth); i ++){
+//		int j = rand() % (world_width * world_height * world_depth);
+//		Block tmp = world[i];
+//		if(!world[i].mesh ){
+//			int p = 4;
+//		}
+//		if(!world[j].mesh ){
+//			int p = 4;
+//		}
+//		world[i] = world[j];
+//		world[j] = tmp;
+//	}
 
 
-	v3 min = { 0 };
-	v3 max = { 0 };
-
-	BVHTree* nodes = (BVHTree*)malloc(sizeof(BVHTree) * world_width * world_height * world_depth);
-
-	for (u32 i = 0; i < world_width*world_height*world_depth; i++) {
-		min = world[i].world_p;
-		min.x -= 0.5f;
-		min.y -= 0.5f;
-		min.z -= 0.5f;
-		max = world[i].world_p;
-		max.x += 0.5f;
-		max.y += 0.5f;
-		max.z += 0.5f;
-
-		if(i == 0){
-			bvh_tree = bvh_tree->Init(min , max, 1, &world[i]);
-		}
-		else{
-			bvh_tree->Insert(min, max, &nodes[i], &world[i]);
-		}
-	}
-	Traverse(bvh_tree, 0);
+//	v3 min = { 0 };
+//	v3 max = { 0 };
+//
+//	BVHTree* nodes = (BVHTree*)Malloc(sizeof(BVHTree) * world_width * world_height * world_depth);
+//
+//	for (u32 i = 0; i < world_width*world_height*world_depth; i++) {
+//		min = world[i].world_p;
+//		min.x -= 0.5f;
+//		min.y -= 0.5f;
+//		min.z -= 0.5f;
+//		max = world[i].world_p;
+//		max.x += 0.5f;
+//		max.y += 0.5f;
+//		max.z += 0.5f;
+//
+//		if(i == 0){
+//			bvh_tree = bvh_tree->Init(min , max, world_width * world_height * world_depth, &world[i]);
+//		}
+//		else{
+//			bvh_tree->Insert(min, max, &nodes[i], &world[i]);
+//		}
+//	}
+//	Traverse(bvh_tree, 0);
 	DebugOutput("\n\nTree Depth: %d\n\n", max_parents);
 }
 
@@ -824,19 +831,19 @@ void CameraMove(){
 
 
 	v3 test_position = game_state->cam.world_p;
-	test_position.x += normalised_movement.x;
-	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
-		test_position.x -= normalised_movement.x;
-	}
-	test_position.y += normalised_movement.y;
-	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
-		test_position.y -= normalised_movement.y;
-		game_state->cam.velocity = 0;
-	}
-	test_position.z += normalised_movement.z;
-	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
-		test_position.z -= normalised_movement.z;
-	}
+//	test_position.x += normalised_movement.x;
+//	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+//		test_position.x -= normalised_movement.x;
+//	}
+//	test_position.y += normalised_movement.y;
+//	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+//		test_position.y -= normalised_movement.y;
+//		game_state->cam.velocity = 0;
+//	}
+//	test_position.z += normalised_movement.z;
+//	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+//		test_position.z -= normalised_movement.z;
+//	}
 
 	game_state->cam.world_p = test_position;
 
@@ -866,22 +873,27 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 	game_input = in_game_input;
 	frame_delta = in_frame_delta;
 
+
 	if (!init) {
 		srand(0);
 		init = 1;
-		game_state = (Game_State*)memory.memory;
-		SetMemoryArena( { &(game_state->d_memory), memory.size - (u32)sizeof(Game_State) });
-//		game_state->cam.camera_dir = { 0, 0, 1 };
-//		game_state->cam.world_p = { 5, 20, 5 };
-//		game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
-//		game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
+		game_state = (GameState*)memory.memory;
+		SetMemoryArena( { &(game_state->d_memory), memory.size - (u32)sizeof(GameState) });
 		io = io_in;
+
+
 		if(!game_state->gl_render_context){
 			GetRenderContext(window);
+
+			game_state->cam.camera_dir = { 0, 0, 1 };
+			game_state->cam.world_p = { 5, 20, 5 };
+			game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
+			game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
+
 		}
 		SetUpGL();
 
-		GenerateWorld(world);
+		GenerateWorld(game_state->world);
 
 		u32 world_attribs[] = { 
 			Attribute_VertexPosition, 
@@ -897,7 +909,7 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		group_world->vertex_count = 0;
 
 		for(int i = 0; i < world_width * world_height * world_depth; i ++){
-			PushMesh(world[i], group_world);
+			PushMesh(game_state->world[i], group_world);
 		}
 
 		u32 debug_attribs[] = { 
@@ -930,16 +942,16 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-	if (Entity* e = CheckCollisionRay(Raycast{game_state->cam.world_p, raycast*20}, bvh_tree)) {
-		Box b;
-		b.min.x = e->world_p.x - 0.5f;
-		b.min.y = e->world_p.y - 0.5f;
-		b.min.z = e->world_p.z - 0.5f;
-		b.max.x = e->world_p.x + 0.5f;
-		b.max.y = e->world_p.y + 0.5f;
-		b.max.z = e->world_p.z + 0.5f;
-		PushBoxOutline(group_debug, b, 0.05f, v3{1, 0, 1});
-	}
+//	if (Entity* e = CheckCollisionRay(Raycast{game_state->cam.world_p, raycast*20}, bvh_tree)) {
+//		Box b;
+//		b.min.x = e->world_p.x - 0.5f;
+//		b.min.y = e->world_p.y - 0.5f;
+//		b.min.z = e->world_p.z - 0.5f;
+//		b.max.x = e->world_p.x + 0.5f;
+//		b.max.y = e->world_p.y + 0.5f;
+//		b.max.z = e->world_p.z + 0.5f;
+//		PushBoxOutline(group_debug, b, 0.05f, v3{1, 0, 1});
+//	}
 
 	//DebugCollisionOutlines(group_debug, bvh_tree, 0, v3{1, 0, 1});
 

@@ -185,17 +185,18 @@ enum RenderGroups{
 	RenderGroup_Debug = 1,
 };
 
-struct Game_State{
+struct GameState{
 	HGLRC gl_render_context;
 	Camera cam;
 	v2 client_dimensions;
 	RenderGroup* groups;
+	Block world[10000];
 
 	void* d_memory;
 };
 
 
-static Game_State* game_state;
+static GameState* game_state;
 
 typedef signed long long int khronos_ssize_t;
 typedef khronos_ssize_t GLsizeiptr;
@@ -309,14 +310,13 @@ void GetRenderContext(HWND window) {
 			wglDeleteContext(render_context);
 		}
 	}
-    wglSwapInterval = (type_wglSwapIntervalEXT*)wglGetProcAddress("wglSwapIntervalEXT");
 
     glViewport(0, 0, 1280, 720);
     ReleaseDC(window, device_context);
 }
 
 void SetUpGL(){
-
+	wglSwapInterval = (type_wglSwapIntervalEXT*)wglGetProcAddress("wglSwapIntervalEXT");
     glGenVertexArrays = (type_glGenVertexArrays*)wglGetProcAddress("glGenVertexArrays");
     glBindVertexArray = (type_glBindVertexArray*)wglGetProcAddress("glBindVertexArray");
     glGenBuffers = (type_glGenBuffers*)wglGetProcAddress("glGenBuffers");

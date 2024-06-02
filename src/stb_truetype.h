@@ -2967,11 +2967,11 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e,
             step = &active;
             while (*step && (*step)->next) {
                if ((*step)->x > (*step)->next->x) {
-                  stbtt__active_edge *t = *step;
-                  stbtt__active_edge *q = t->next;
+                  stbtt__active_edge *octtree = *step;
+                  stbtt__active_edge *q = octtree->next;
 
-                  t->next = q->next;
-                  q->next = t;
+                  octtree->next = q->next;
+                  q->next = octtree;
                   *step = q;
                   changed = 1;
                }
