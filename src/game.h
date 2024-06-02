@@ -9,14 +9,8 @@
 
 #define b32 uint32_t
 
-#define MAXIMUM(a, b) a > b ? a : b
-#define MINIMUM(a, b) a < b ? a : b
 
 #include "maths.h"
-
-inline s32 Absolute(s32 value){
-    return value >= 0 ? value : value*-1;
-}
 
 struct File{
     u64 size;

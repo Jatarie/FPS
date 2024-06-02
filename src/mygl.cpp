@@ -11,6 +11,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
 //#include "mygltest.cpp"
 //#include "mygltesttext.cpp"
 persist Block world[10000];
@@ -166,6 +169,7 @@ void RaycastThing(mat4 view, mat4 projection){
 }
 
 void DrawVertices(RenderGroup *group){
+	TIMED_FUNCTION
     glBindVertexArray(group->vao);
     glBindBuffer(GL_ARRAY_BUFFER, group->vbo);
     glBufferData(GL_ARRAY_BUFFER, group->vertex_data_bytes, group->vertex_data.data, GL_STATIC_DRAW);
@@ -216,6 +220,7 @@ void PushVertexData(r32 data, u32 data_size_bytes, RenderGroup* group){
 }
 
 void PushMesh(Entity e, RenderGroup *group){
+	TIMED_FUNCTION
 	for (int i = 0; i < e.mesh->vertex_count; i++) {
 		for(int a = 0; a < group->format.attrib_count; a++){
 			switch (group->format.attributes[a]){
@@ -264,6 +269,7 @@ global u32 world_height = 1;
 global u32 world_depth = 64;
 
 float Perlin(v3 in){
+	TIMED_FUNCTION
 	in.x /= world_width;
 	in.y /= world_height;
 	in.z /= world_depth;
@@ -271,6 +277,7 @@ float Perlin(v3 in){
 }
 
 void GenerateWorld(Block* world){
+	TIMED_FUNCTION
 //	TIMED_FUNCTION
 
 	block_map[BlockType_Furnace][Face_Top] = v2 { 6, 8 };
@@ -345,6 +352,7 @@ void GenerateWorld(Block* world){
 }
 
 RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count, char* vertex_shader, char* fragment_shader, GLuint primitive_mode){
+	TIMED_FUNCTION
 	RenderGroup *group = (RenderGroup*)Malloc(sizeof(RenderGroup));
 	group->vertex_data = Array(1024, 4);
 	group->format.attrib_count = attrib_count;
@@ -381,6 +389,7 @@ RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count, char* vertex_shad
 }
 
 void PushRect(RenderGroup* group, Box b, Dimension d, v3 color){
+	TIMED_FUNCTION
 	Vertex v[6];
 	v[0] = { 0 };
 	v[1] = { 0 };
@@ -463,6 +472,7 @@ void PushRect(RenderGroup* group, Box b, Dimension d, v3 color){
 }
 
 void PushBox(RenderGroup* group, Box b, v3 color){
+	TIMED_FUNCTION
 	v3 min , max;
 	min = b.min;
 	max = b.max;
@@ -496,6 +506,7 @@ void PushBox(RenderGroup* group, Box b, v3 color){
 }
 
 void PushLine(RenderGroup* group ,v3 start, v3 end, r32 thickness, v3 color){
+	TIMED_FUNCTION
 	r32 half_thickness = thickness / 2.0f;
 	v3 diff = start-end;
 
@@ -530,6 +541,7 @@ void PushLine(RenderGroup* group ,v3 start, v3 end, r32 thickness, v3 color){
 }
 
 void PushBoxOutline(RenderGroup* group ,Box b, r32 thickness, v3 color){
+	TIMED_FUNCTION
 	v3 start[12];
 	v3 end[12];
 	for(int i = 0; i < 12; i ++){
@@ -572,6 +584,7 @@ void PushBoxOutline(RenderGroup* group ,Box b, r32 thickness, v3 color){
 }
 
 b32 CheckCollisionRayFace(r32 b_min_a, r32 b_min_b, r32 b_min_c, r32 b_max_b, r32 b_max_c, r32 ray_direction_a, r32 ray_direction_b, r32 ray_direction_c){
+	TIMED_FUNCTION
 	r32 diff_a = b_min_a;
 	r32 ratio = diff_a / ray_direction_a;
 	if(ratio < 0.0f){
@@ -600,6 +613,7 @@ b32 CheckCollisionRayFace(r32 b_min_a, r32 b_min_b, r32 b_min_c, r32 b_max_b, r3
 }
 
 Entity* CheckCollisionRay(Raycast ray, BVHTree* tree){
+	TIMED_FUNCTION
 	Box b = tree->bounding_box;
 	b.min -= ray.origin;
 	b.max -= ray.origin;
@@ -650,6 +664,7 @@ Entity* CheckCollisionRay(Raycast ray, BVHTree* tree){
 
 
 Entity* CheckCollision(Entity* a, BVHTree* tree){
+	TIMED_FUNCTION
 	v3 a_low, a_high;
 	Entity* e = NULL;
 
@@ -699,6 +714,7 @@ Entity* CheckCollision(Entity* a, BVHTree* tree){
 }
 
 Entity* CheckCollision(v3 pos, Box bounding_box, BVHTree* tree) {
+	TIMED_FUNCTION
 	Entity a;
 	a.world_p = pos;
 	a.bounding_box = bounding_box;
@@ -706,6 +722,7 @@ Entity* CheckCollision(v3 pos, Box bounding_box, BVHTree* tree) {
 }
 
 b32 WithinBounds(Entity* a, Entity* b, Dimension d){
+	TIMED_FUNCTION
 	if(d == Dimension_x){
 		if((a->world_p.x + a->bounding_box.max.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.max.x) < (b->world_p.x + b->bounding_box.max.x)){
 			return true;
@@ -734,15 +751,18 @@ b32 WithinBounds(Entity* a, Entity* b, Dimension d){
 }
 
 void CameraMove(){
+	TIMED_FUNCTION
 
 	v3 unnormalised_movement = { 0 };
 
 	r32 movement_speed = 10;
 	if (game_input.move_forward.is_down) {
 		unnormalised_movement += game_state->cam.camera_dir;
+		unnormalised_movement.y = 0;
 	}
 	if (game_input.move_back.is_down) {
 		unnormalised_movement -= game_state->cam.camera_dir;
+		unnormalised_movement.y = 0;
 	}
 	if (game_input.move_right.is_down) {
 		unnormalised_movement += Normalize(Cross(v3_up, game_state->cam.camera_dir));
@@ -783,6 +803,8 @@ void CameraMove(){
 		game_state->cam.camera_dir.y = sin_pitch;
 		game_state->cam.camera_dir = Normalize(game_state->cam.camera_dir);
 	}
+
+	DebugOutput("%f\n", frame_delta);
 	
 	v3 normalised_movement = Normalize(unnormalised_movement) * movement_speed * frame_delta;
 
@@ -822,6 +844,7 @@ void CameraMove(){
 }
 
 void DebugCollisionOutlines(RenderGroup* group ,BVHTree* tree, u32 level, v3 color){
+	TIMED_FUNCTION
 	if(level < 10){
 		Box b = tree->bounding_box;
 		PushBoxOutline(group, b, 0.05f, color);
@@ -836,12 +859,15 @@ void DebugCollisionOutlines(RenderGroup* group ,BVHTree* tree, u32 level, v3 col
 
 
 void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
-//	TIMED_FUNCTION
+	TIMED_FUNCTION
 	persist b32 init = 0;
 	persist RenderGroup *group_world;
 	persist RenderGroup *group_debug;
 	game_input = in_game_input;
 	frame_delta = in_frame_delta;
+	persist b32* init2;
+	persist b32* init3;
+	persist b32* init4;
 
 	if (!init) {
 		srand(0);
@@ -850,8 +876,6 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		SetMemoryArena( { &(game_state->d_memory), memory.size - (u32)sizeof(Game_State) });
 		game_state->cam.camera_dir = { 0, 0, 1 };
 		game_state->cam.world_p = { 5, 20, 5 };
-//		game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
-//		game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
 		game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
 		game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
 		io = io_in;
@@ -868,6 +892,13 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		};
 
 		group_world = CreateRenderGroup(world_attribs, ARRAYCOUNT(world_attribs), "c:/code/fps/src/shaders/cube_vertex.hlsl", "c:/code/fps/src/shaders/cube_fragment.hlsl", GL_TRIANGLES);
+		group_world->vertex_data_bytes = 0;
+		group_world->vertex_data.count = 0;
+		group_world->vertex_count = 0;
+
+		for(int i = 0; i < world_width * world_height * world_depth; i ++){
+			PushMesh(world[i], group_world);
+		}
 
 		u32 debug_attribs[] = { 
 			Attribute_VertexPosition,
@@ -876,9 +907,6 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 		group_debug = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES);
 	}
 
-	group_world->vertex_data_bytes = 0;
-	group_world->vertex_data.count = 0;
-	group_world->vertex_count = 0;
 
 	group_debug->vertex_data_bytes = 0;
 	group_debug->vertex_data.count = 0;
@@ -901,9 +929,6 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	for(int i = 0; i < world_width * world_height * world_depth; i ++){
-		PushMesh(world[i], group_world);
-	}
 
 	if (Entity* e = CheckCollisionRay(Raycast{game_state->cam.world_p, raycast*20}, bvh_tree)) {
 		Box b;
@@ -918,10 +943,8 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 
 	//DebugCollisionOutlines(group_debug, bvh_tree, 0, v3{1, 0, 1});
 
-//	TIMED_BLOCK("Draw Vert")
 	DrawVertices(group_debug);
 	DrawVertices(group_world);
-//	BLOCK_END
 
 	HDC device_context = GetDC(window);
 	SwapBuffers(device_context);
