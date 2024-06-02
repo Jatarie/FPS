@@ -174,16 +174,22 @@ struct VertexDataFormat{
 
 struct RenderGroup{
 	GLuint vao, vbo, shader_program, primitive_mode;
-	Array vertex_data;
 	u32 vertex_data_bytes;
 	u32 vertex_count;
 	VertexDataFormat format;
+	Array vertex_data;
+};
+
+enum RenderGroups{
+	RenderGroup_World = 0,
+	RenderGroup_Debug = 1,
 };
 
 struct Game_State{
 	HGLRC gl_render_context;
 	Camera cam;
 	v2 client_dimensions;
+	RenderGroup* groups;
 
 	void* d_memory;
 };
@@ -268,42 +274,48 @@ type_glUniform3f* glUniform3f;
 type_glUniform4f* glUniform4f;
 
 
-void InitOpenGL(HWND window){
-    HDC device_context = GetDC(window);
-    PIXELFORMATDESCRIPTOR descriptor = {0};
-    descriptor.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-    descriptor.nVersion = 1;
-    descriptor.iPixelType = PFD_TYPE_RGBA;
-    descriptor.dwFlags = PFD_SUPPORT_OPENGL|PFD_DRAW_TO_WINDOW|PFD_DOUBLEBUFFER;
-    descriptor.cColorBits = 32;
-    descriptor.cAlphaBits = 8;
-    descriptor.iLayerType = PFD_MAIN_PLANE;
-    s32 suggested_format_index = ChoosePixelFormat(device_context, &descriptor);
-    PIXELFORMATDESCRIPTOR actual_descriptor = {0};
-    DescribePixelFormat(device_context, suggested_format_index, sizeof(PIXELFORMATDESCRIPTOR), &actual_descriptor);
-    SetPixelFormat(device_context, suggested_format_index, &actual_descriptor);
+void GetRenderContext(HWND window) {
+	HDC device_context = GetDC(window);
+	PIXELFORMATDESCRIPTOR descriptor = { 0 };
+	descriptor.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	descriptor.nVersion = 1;
+	descriptor.iPixelType = PFD_TYPE_RGBA;
+	descriptor.dwFlags = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+	descriptor.cColorBits = 32;
+	descriptor.cAlphaBits = 8;
+	descriptor.iLayerType = PFD_MAIN_PLANE;
+	s32 suggested_format_index = ChoosePixelFormat(device_context, &descriptor);
+	PIXELFORMATDESCRIPTOR actual_descriptor = { 0 };
+	DescribePixelFormat(device_context, suggested_format_index, sizeof(PIXELFORMATDESCRIPTOR), &actual_descriptor);
+	SetPixelFormat(device_context, suggested_format_index, &actual_descriptor);
 
+	if (!game_state->gl_render_context) {
+		HGLRC render_context = wglCreateContext(device_context);
 
-    if(!game_state->gl_render_context){
-        HGLRC render_context = wglCreateContext(device_context);
-
-        game_state->gl_render_context = render_context;
-        if(wglMakeCurrent(device_context, render_context)){
+		game_state->gl_render_context = render_context;
+		if (wglMakeCurrent(device_context, render_context)) {
 			wglCreateContextAttribsARB = (type_wglCreateContextAttribsARB*)wglGetProcAddress("wglCreateContextAttribsARB");
 	
 			int attrib_list[] = {
 								WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 								WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-								WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB|WGL_CONTEXT_DEBUG_BIT_ARB,
+								WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB,
 								WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 								0
 			};
 			HGLRC render_context_arb = wglCreateContextAttribsARB(device_context, NULL, attrib_list);
-			if(wglMakeCurrent(device_context, render_context_arb)){
+			if (wglMakeCurrent(device_context, render_context_arb)) {
 			}
 			wglDeleteContext(render_context);
-        }
-    }
+		}
+	}
+    wglSwapInterval = (type_wglSwapIntervalEXT*)wglGetProcAddress("wglSwapIntervalEXT");
+
+    glViewport(0, 0, 1280, 720);
+    ReleaseDC(window, device_context);
+}
+
+void SetUpGL(){
 
     glGenVertexArrays = (type_glGenVertexArrays*)wglGetProcAddress("glGenVertexArrays");
     glBindVertexArray = (type_glBindVertexArray*)wglGetProcAddress("glBindVertexArray");
@@ -333,10 +345,6 @@ void InitOpenGL(HWND window){
     glUniform1f = (type_glUniform1f*)wglGetProcAddress("glUniform1f");
     glUniform3f = (type_glUniform3f*)wglGetProcAddress("glUniform3f");
     glUniform4f = (type_glUniform4f*)wglGetProcAddress("glUniform4f");
-    wglSwapInterval = (type_wglSwapIntervalEXT*)wglGetProcAddress("wglSwapIntervalEXT");
-
-    glViewport(0, 0, 1280, 720);
-    ReleaseDC(window, device_context);
 }
 
 #define GL_TEXTURE0 0x84C0

@@ -691,9 +691,9 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
                 RECT client_rect;
                 GetClientRect( window_handle, &client_rect);
 
-//				if(frame_time > 1.0f/60.0f){
-//					frame_time = 1.0f / 60.0f;
-//				}
+				if(frame_time > 1.0f/60.0f){
+					frame_time = 1.0f / 60.0f;
+				}
 
                 RenderGame(window_handle, &io, memory, frame_time, game_input, client_rect);
                 ReleaseDC(window_handle, device_context);

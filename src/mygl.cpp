@@ -865,21 +865,21 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 	persist RenderGroup *group_debug;
 	game_input = in_game_input;
 	frame_delta = in_frame_delta;
-	persist b32* init2;
-	persist b32* init3;
-	persist b32* init4;
 
 	if (!init) {
 		srand(0);
 		init = 1;
 		game_state = (Game_State*)memory.memory;
 		SetMemoryArena( { &(game_state->d_memory), memory.size - (u32)sizeof(Game_State) });
-		game_state->cam.camera_dir = { 0, 0, 1 };
-		game_state->cam.world_p = { 5, 20, 5 };
-		game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
-		game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
+//		game_state->cam.camera_dir = { 0, 0, 1 };
+//		game_state->cam.world_p = { 5, 20, 5 };
+//		game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
+//		game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
 		io = io_in;
-		InitOpenGL(window);
+		if(!game_state->gl_render_context){
+			GetRenderContext(window);
+		}
+		SetUpGL();
 
 		GenerateWorld(world);
 
@@ -949,5 +949,6 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 	HDC device_context = GetDC(window);
 	SwapBuffers(device_context);
 	ReleaseDC(window, device_context);
+	glEnd();
 
 }
