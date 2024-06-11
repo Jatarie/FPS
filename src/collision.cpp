@@ -143,7 +143,7 @@ b32 CheckCollisionRayBox(Raycast ray, Box box){
 	return collision;
 }
 
-b32 RayEntityCollision(Raycast ray, Entity* entity){
+b32 CheckCollisionRayEntity(Raycast ray, Entity* entity){
 	Box box;
 	box.min = entity->world_p + entity->bounding_box.min;
 	box.max = entity->world_p + entity->bounding_box.max;
@@ -161,7 +161,7 @@ Entity* CheckCollisionRayWorld(Raycast ray, OctTree* tree) {
 		if (!tree->children) {
 			for(int i = 0; i < tree->members.count; i++){
 				Entity* test_entity = ((Entity**)tree->members.data)[i];
-				if (RayEntityCollision(ray, test_entity)) {
+				if (CheckCollisionRayEntity(ray, test_entity)) {
 					return test_entity;
 				}
 			}
@@ -208,7 +208,6 @@ Entity* CheckCollision(Entity* a, OctTree* tree) {
 		}
 	}
 	return e;
-
 }
 
 Entity* CheckCollision(v3 pos, Box bounding_box, OctTree* tree) {
@@ -219,31 +218,31 @@ Entity* CheckCollision(v3 pos, Box bounding_box, OctTree* tree) {
 	return CheckCollision(&a, tree);
 }
 
-b32 WithinBounds(Entity* a, Entity* b, Dimension d){
-	TIMED_FUNCTION
-	if(d == Dimension_x){
-		if((a->world_p.x + a->bounding_box.max.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.max.x) < (b->world_p.x + b->bounding_box.max.x)){
-			return true;
-		}
-		if((a->world_p.x + a->bounding_box.min.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.min.x) < (b->world_p.x + b->bounding_box.max.x)){
-			return true;
-		}
-	}
-	else if(d == Dimension_y){
-		if((a->world_p.y + a->bounding_box.max.y) > (b->world_p.y + b->bounding_box.min.y) && (a->world_p.y + a->bounding_box.max.y) < (b->world_p.y + b->bounding_box.max.y)){
-			return true;
-		}
-		if((a->world_p.y + a->bounding_box.min.y) > (b->world_p.y + b->bounding_box.min.y) && (a->world_p.y + a->bounding_box.min.y) < (b->world_p.y + b->bounding_box.max.y)){
-			return true;
-		}
-	}
-	else if(d == Dimension_z){
-		if((a->world_p.z + a->bounding_box.max.z) > (b->world_p.z + b->bounding_box.min.z) && (a->world_p.z + a->bounding_box.max.z) < (b->world_p.z + b->bounding_box.max.z)){
-			return true;
-		}
-		if((a->world_p.z + a->bounding_box.min.z) > (b->world_p.z + b->bounding_box.min.z) && (a->world_p.z + a->bounding_box.min.z) < (b->world_p.z + b->bounding_box.max.z)){
-			return true;
-		}
-	}
-	return false;
-}
+//b32 WithinBounds(Entity* a, Entity* b, Dimension d){
+//	TIMED_FUNCTION
+//	if(d == Dimension_x){
+//		if((a->world_p.x + a->bounding_box.max.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.max.x) < (b->world_p.x + b->bounding_box.max.x)){
+//			return true;
+//		}
+//		if((a->world_p.x + a->bounding_box.min.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.min.x) < (b->world_p.x + b->bounding_box.max.x)){
+//			return true;
+//		}
+//	}
+//	else if(d == Dimension_y){
+//		if((a->world_p.y + a->bounding_box.max.y) > (b->world_p.y + b->bounding_box.min.y) && (a->world_p.y + a->bounding_box.max.y) < (b->world_p.y + b->bounding_box.max.y)){
+//			return true;
+//		}
+//		if((a->world_p.y + a->bounding_box.min.y) > (b->world_p.y + b->bounding_box.min.y) && (a->world_p.y + a->bounding_box.min.y) < (b->world_p.y + b->bounding_box.max.y)){
+//			return true;
+//		}
+//	}
+//	else if(d == Dimension_z){
+//		if((a->world_p.z + a->bounding_box.max.z) > (b->world_p.z + b->bounding_box.min.z) && (a->world_p.z + a->bounding_box.max.z) < (b->world_p.z + b->bounding_box.max.z)){
+//			return true;
+//		}
+//		if((a->world_p.z + a->bounding_box.min.z) > (b->world_p.z + b->bounding_box.min.z) && (a->world_p.z + a->bounding_box.min.z) < (b->world_p.z + b->bounding_box.max.z)){
+//			return true;
+//		}
+//	}
+//	return false;
+//}

@@ -296,7 +296,7 @@ void GenerateWorld(Block* world){
 	b.min = v3{-100, -100, -100};
 	b.max = v3{100, 100, 100};
 	octtree = (OctTree*)Malloc(sizeof(OctTree));
-	octtree->Init(0, b);
+	octtree->Init(1, b);
 
 	for (u32 y = 0; y < world_height; y++) {
 		for (u32 z = 0; z < world_depth; z++) {

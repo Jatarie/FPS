@@ -110,8 +110,8 @@ struct OctTree{
 b32 CheckCollisionRayFace(v3 point_1, v3 point_2, v3 ray_direction, b32 positive_normal);
 b32 CheckCollisionRayFace(v3 point_1, v3 point_2, v3 normal, v3 ray_direction);
 b32 CheckCollisionRayBox(Raycast ray, Box box);
-b32 RayEntityCollision(Raycast ray, Entity* entity);
+b32 CheckCollisionRayEntity(Raycast ray, Entity* entity);
 Entity* CheckCollisionRayWorld(Raycast ray, OctTree* tree);
 Entity* CheckCollision(Entity* a, OctTree* tree);
 Entity* CheckCollision(v3 pos, Box bounding_box, OctTree* tree);
-b32 WithinBounds(Entity* a, Entity* b, Dimension d);
+//b32 WithinBounds(Entity* a, Entity* b, Dimension d);
