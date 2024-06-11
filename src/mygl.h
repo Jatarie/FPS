@@ -192,6 +192,7 @@ struct GameState{
 	v2 client_dimensions;
 	RenderGroup* groups;
 	Block world[10000];
+	Hash_Table* loaded_textures;
 
 	Memory_Arena memory_arena;
 //	void* d_memory;

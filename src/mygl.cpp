@@ -17,14 +17,14 @@
 //#include "mygltest.cpp"
 //#include "mygltesttext.cpp"
 
+#include "collision.cpp"
 
-Hash_Table* loaded_textures = NULL;
 GLuint LoadTexture(char* path_to_image){
-	if(!loaded_textures){
-		loaded_textures = loaded_textures->Create(100);
+	if(!game_state->loaded_textures){
+		game_state->loaded_textures = game_state->loaded_textures->Create(100);
 	}
 	
-	GLuint test_if_loaded = loaded_textures->Get(loaded_textures, path_to_image);
+	GLuint test_if_loaded = game_state->loaded_textures->Get(game_state->loaded_textures, path_to_image);
 	if(test_if_loaded){
 		return test_if_loaded;
 	}
@@ -65,7 +65,7 @@ GLuint LoadTexture(char* path_to_image){
 	// Free the image data from memory
 	stbi_image_free(data);
 	
-	loaded_textures->Add(loaded_textures, path_to_image, texture);
+	game_state->loaded_textures->Add(game_state->loaded_textures, path_to_image, texture);
 	return texture;
 }
 
@@ -264,9 +264,9 @@ void Traverse(BVHTree* tree, u32 parents){
 	}	
 }
 
-global u32 world_width = 10;
+global u32 world_width = 32;
 global u32 world_height = 1;
-global u32 world_depth = 1;
+global u32 world_depth = 32;
 
 float Perlin(v3 in){
 	TIMED_FUNCTION
@@ -278,7 +278,6 @@ float Perlin(v3 in){
 
 void GenerateWorld(Block* world){
 	TIMED_FUNCTION
-
 	block_map[BlockType_Furnace][Face_Top] = v2 { 6, 8 };
 	block_map[BlockType_Furnace][Face_Bottom] = v2 { 6, 8 };
 	block_map[BlockType_Furnace][Face_Left] = v2 { 6, 8 };
@@ -297,7 +296,7 @@ void GenerateWorld(Block* world){
 	b.min = v3{-100, -100, -100};
 	b.max = v3{100, 100, 100};
 	octtree = (OctTree*)Malloc(sizeof(OctTree));
-	octtree->Init(1, b);
+	octtree->Init(0, b);
 
 	for (u32 y = 0; y < world_height; y++) {
 		for (u32 z = 0; z < world_depth; z++) {
@@ -316,46 +315,6 @@ void GenerateWorld(Block* world){
 			}
 		}
 	}
-
-//	srand(100);
-//	for(int i = 0 ; i < (world_width * world_height * world_depth); i ++){
-//		int j = rand() % (world_width * world_height * world_depth);
-//		Block tmp = world[i];
-//		if(!world[i].mesh ){
-//			int p = 4;
-//		}
-//		if(!world[j].mesh ){
-//			int p = 4;
-//		}
-//		world[i] = world[j];
-//		world[j] = tmp;
-//	}
-
-
-//	v3 min = { 0 };
-//	v3 max = { 0 };
-//
-//	BVHTree* nodes = (BVHTree*)Malloc(sizeof(BVHTree) * world_width * world_height * world_depth);
-//
-//	for (u32 i = 0; i < world_width*world_height*world_depth; i++) {
-//		min = world[i].world_p;
-//		min.x -= 0.5f;
-//		min.y -= 0.5f;
-//		min.z -= 0.5f;
-//		max = world[i].world_p;
-//		max.x += 0.5f;
-//		max.y += 0.5f;
-//		max.z += 0.5f;
-//
-//		if(i == 0){
-//			bvh_tree = bvh_tree->Init(min , max, world_width * world_height * world_depth, &world[i]);
-//		}
-//		else{
-//			bvh_tree->Insert(min, max, &nodes[i], &world[i]);
-//		}
-//	}
-//	Traverse(bvh_tree, 0);
-	DebugOutput("\n\nTree Depth: %d\n\n", max_parents);
 }
 
 RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count, char* vertex_shader, char* fragment_shader, GLuint primitive_mode){
@@ -590,185 +549,6 @@ void PushBoxOutline(RenderGroup* group ,Box b, r32 thickness, v3 color){
 	}
 }
 
-b32 CheckCollisionRayFace(v3 point_1, v3 point_2, v3 ray_direction, b32 positive_normal){
-	b32 intersection = true;
-	r32 ratio;
-	if(positive_normal){
-		ratio = point_2.x / ray_direction.x;
-	}
-	else{
-		ratio = point_1.x / ray_direction.x;
-	}
-	if(ratio < 0){
-		return false;
-	}
-	ray_direction *= ratio;
-	if(ray_direction.y > point_2.y){
-		intersection = false;
-	}
-	if(ray_direction.z > point_2.z){
-		intersection = false;
-	}
-	if(ray_direction.y < point_1.y){
-		intersection = false;
-	}
-	if(ray_direction.z < point_1.z){
-		intersection = false;
-	}
-	return intersection;
-
-}
-
-b32 CheckCollisionRayFace(v3 point_1, v3 point_2, v3 normal, v3 ray_direction) {
-	b32 intersection = true;
-
-	if(normal == v3Left()){
-		intersection = CheckCollisionRayFace(point_1, point_2, ray_direction, false);
-	}
-
-	else if(normal == v3Right()){
-		intersection = CheckCollisionRayFace(point_1, point_2, ray_direction, true);
-	}
-
-	else if(normal == v3Down()){
-		intersection = CheckCollisionRayFace(point_1.yxz(), point_2.yxz(), ray_direction.yxz(), false);
-	}
-
-	else if(normal == v3Up()){
-		intersection = CheckCollisionRayFace(point_1.yxz(), point_2.yxz(), ray_direction.yxz(), true);
-	}
-
-	else if(normal == v3Forward()){
-		intersection = CheckCollisionRayFace(point_1.zxy(), point_2.zxy(), ray_direction.zxy(), true);
-	}
-
-	else if(normal == v3Backwards()){
-		intersection = CheckCollisionRayFace(point_1.zxy(), point_2.zxy(), ray_direction.zxy(), false);
-	}
-
-	return intersection;
-}
-
-b32 CheckCollisionRayBox(Raycast ray, Box box){
-
-	box.min -= ray.origin;
-	box.max -= ray.origin;
-
-	b32 collision = BoxIntersection(ray.origin, box);
-	collision = collision || ((ray.origin.x < box.min.x) && CheckCollisionRayFace(v3 { box.min.x, box.min.y, box.min.z }, v3 { box.min.x, box.max.y, box.max.z }, v3Left(), ray.direction));
-	collision = collision || ((ray.origin.x > box.max.x) && CheckCollisionRayFace(v3 { box.max.x, box.min.y, box.min.z }, v3 { box.max.x, box.max.y, box.max.z }, v3Right(), ray.direction));
-	collision = collision || ((ray.origin.y > box.max.y) && CheckCollisionRayFace(v3 { box.min.x, box.max.y, box.min.z }, v3 { box.max.x, box.max.y, box.max.z }, v3Up(), ray.direction));
-	collision = collision || ((ray.origin.y < box.min.y) && CheckCollisionRayFace(v3 { box.min.x, box.min.y, box.min.z }, v3 { box.max.x, box.min.y, box.max.z }, v3Down(), ray.direction));
-	collision = collision || ((ray.origin.z > box.max.z) && CheckCollisionRayFace(v3 { box.min.x, box.min.y, box.max.z }, v3 { box.max.x, box.max.y, box.max.z }, v3Backwards(), ray.direction));
-	collision = collision || ((ray.origin.z < box.min.z) && CheckCollisionRayFace(v3 { box.min.x, box.min.y, box.min.z }, v3 { box.max.x, box.max.y, box.min.z }, v3Forward(), ray.direction));
-	return collision;
-}
-
-b32 RayEntityCollision(Raycast ray, Entity* entity){
-	Box box;
-	box.min = entity->world_p + entity->bounding_box.min;
-	box.max = entity->world_p + entity->bounding_box.max;
-	return CheckCollisionRayBox(ray, box);
-}
-
-
-Entity* CheckCollisionRayWorld(Raycast ray, OctTree* tree) {
-	TIMED_FUNCTION;
-
-	b32 collision = CheckCollisionRayBox(ray, tree->bounding_box);
-
-	Entity* e = NULL;
-	if (collision) {
-		if (!tree->children) {
-			for(int i = 0; i < tree->members.count; i++){
-				Entity* test_entity = ((Entity**)tree->members.data)[i];
-				if (RayEntityCollision(ray, test_entity)) {
-					return test_entity;
-				}
-			}
-		}
-		else {
-			for (u32 i = 0; i < 8; i++) {
-				e = CheckCollisionRayWorld(ray, tree->children[i]);
-				if (e) {
-					break;
-				}
-			}
-		}
-	}
-	return e;
-}
-
-Entity* CheckCollision(Entity* a, OctTree* tree) {
-	TIMED_FUNCTION
-	v3 a_low, a_high;
-	Entity* e = NULL;
-
-	a_low.x = a->world_p.x + a->bounding_box.min.x;
-	a_low.y = a->world_p.y + a->bounding_box.min.y;
-	a_low.z = a->world_p.z + a->bounding_box.min.z;
-
-	a_high.x = a->world_p.x + a->bounding_box.max.x;
-	a_high.y = a->world_p.y + a->bounding_box.max.y;
-	a_high.z = a->world_p.z + a->bounding_box.max.z;
-
-	if(tree->depth == 0){
-		for(u32 i = 0; i < tree->members.count; i++){
-			Entity* test = ((Entity**)(tree->members.data))[i];
-			if(BoxIntersection(a, test)){
-				return test;
-			}
-		}
-	}
-	else{
-		for(u32 i = 0; i < 8; i ++){
-			OctTree* child = tree->children[i];
-			if (BoxIntersection(a, child->bounding_box)){
-				return CheckCollision(a, child);
-			}
-		}
-	}
-	return e;
-
-}
-
-Entity* CheckCollision(v3 pos, Box bounding_box, OctTree* tree) {
-	TIMED_FUNCTION
-	Entity a;
-	a.world_p = pos;
-	a.bounding_box = bounding_box;
-	return CheckCollision(&a, tree);
-}
-
-b32 WithinBounds(Entity* a, Entity* b, Dimension d){
-	TIMED_FUNCTION
-	if(d == Dimension_x){
-		if((a->world_p.x + a->bounding_box.max.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.max.x) < (b->world_p.x + b->bounding_box.max.x)){
-			return true;
-		}
-		if((a->world_p.x + a->bounding_box.min.x) > (b->world_p.x + b->bounding_box.min.x) && (a->world_p.x + a->bounding_box.min.x) < (b->world_p.x + b->bounding_box.max.x)){
-			return true;
-		}
-	}
-	else if(d == Dimension_y){
-		if((a->world_p.y + a->bounding_box.max.y) > (b->world_p.y + b->bounding_box.min.y) && (a->world_p.y + a->bounding_box.max.y) < (b->world_p.y + b->bounding_box.max.y)){
-			return true;
-		}
-		if((a->world_p.y + a->bounding_box.min.y) > (b->world_p.y + b->bounding_box.min.y) && (a->world_p.y + a->bounding_box.min.y) < (b->world_p.y + b->bounding_box.max.y)){
-			return true;
-		}
-	}
-	else if(d == Dimension_z){
-		if((a->world_p.z + a->bounding_box.max.z) > (b->world_p.z + b->bounding_box.min.z) && (a->world_p.z + a->bounding_box.max.z) < (b->world_p.z + b->bounding_box.max.z)){
-			return true;
-		}
-		if((a->world_p.z + a->bounding_box.min.z) > (b->world_p.z + b->bounding_box.min.z) && (a->world_p.z + a->bounding_box.min.z) < (b->world_p.z + b->bounding_box.max.z)){
-			return true;
-		}
-	}
-	return false;
-}
-
 void CameraMove(){
 	TIMED_FUNCTION
 
@@ -830,8 +610,8 @@ void CameraMove(){
 	}
 
 	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
-//	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
-//	normalised_movement.y = normalised_movement.y + delta_y;
+	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
+	normalised_movement.y = normalised_movement.y + delta_y;
 
 	b32 valid_movement = true;
 
@@ -871,7 +651,7 @@ v3 Colors[] = {
 };
 
 void DebugCollisionOutlines(RenderGroup* group ,OctTree* tree){
-	PushBoxOutline(group, tree->bounding_box, 0.05f, Colors[tree->depth]);
+	PushBoxOutline(group, tree->bounding_box, 0.05f * tree->depth * 2 + 0.05f, Colors[tree->depth]);
 	if(tree->children){
 		for(int i = 0; i < 8; i ++){
 			DebugCollisionOutlines(group, tree->children[i]);
