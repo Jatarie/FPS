@@ -186,13 +186,15 @@ enum RenderGroups{
 };
 
 struct GameState{
+	b32 initialised;
 	HGLRC gl_render_context;
 	Camera cam;
 	v2 client_dimensions;
 	RenderGroup* groups;
 	Block world[10000];
 
-	void* d_memory;
+	Memory_Arena memory_arena;
+//	void* d_memory;
 };
 
 

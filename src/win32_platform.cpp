@@ -4,6 +4,7 @@
 #include <xinput.h>
 #include <dsound.h>
 #include "Lib.h"
+#include "myMalloc.h"
 
 #define PI 3.14159265359f
 
@@ -31,7 +32,7 @@ void FreeEntireFile(File game_file){
 }
 
 
-typedef void type_RenderGame(HWND window_handle, IO* io, Memory memory, float frame_time, Game_Input game_input, RECT client_rect);
+typedef void type_RenderGame(HWND window_handle, IO* io, Memory_Arena memory_arena, float frame_time, Game_Input game_input, RECT client_rect);
 type_RenderGame* RenderGame;
 
 struct offscreen_buffer{
@@ -575,9 +576,8 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
     r32 frame_time = 1/target_frame_rate;
     u64 frame_counter = 0;
 
-    Memory memory;
-    memory.memory = VirtualAlloc((void*)(TERABYTES(4)), GIGABYTES(1), MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
-    memory.size = GIGABYTES(1);
+	GetMemoryArena(1024, GIGABYTES(1));
+//	GetMemoryArena(64, 1024);
 
     timeBeginPeriod(1);
 
@@ -607,7 +607,6 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
         raw_input_device[0].dwFlags = 0;
         raw_input_device[0].hwndTarget = window_handle;
         BOOL result = RegisterRawInputDevices(raw_input_device, 1, sizeof(RAWINPUTDEVICE));
-        // InitMemoryArena(GIGABYTES(1));
         
         File f = ReadEntireFile("C:/code/FPS/src/out.wav");
 
@@ -650,8 +649,13 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
                             QueueDeleteAll(input_recording.input_queue);
                             input_recording.input_queue = NULL;
                         }
-                        input_recording.game_memory_state = VirtualAlloc(0, memory.size, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
-                        memcpy(input_recording.game_memory_state, memory.memory, memory.size);
+						LPVOID offset = (void*)(GIGABYTES(32));
+						if(input_recording.game_memory_state){
+							VirtualFree(input_recording.game_memory_state,0, MEM_RELEASE);
+						}
+                        input_recording.game_memory_state = VirtualAlloc(offset, GIGABYTES(2), MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
+                        memcpy(input_recording.game_memory_state, memory_arena.memory, memory_arena.total_size);
+//                        MemoryCopy(input_recording.game_memory_state, memory_arena.memory, memory_arena.total_size);
                         input_recording.init = 1;
                     }
                     QueuePush(&input_recording.input_queue, game_input, frame_time);
@@ -666,11 +670,11 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
                         persist Input_Queue* current = input_recording.input_queue;
                         if(!input_recording.first_pass){
                             input_recording.first_pass = true;
-                            memcpy(memory.memory, input_recording.game_memory_state, memory.size);
+                            memcpy(memory_arena.memory, input_recording.game_memory_state, memory_arena.total_size);
                         }
                         if(current == NULL){
                             current = input_recording.input_queue;
-                            memcpy(memory.memory, input_recording.game_memory_state, memory.size);
+                            memcpy(memory_arena.memory, input_recording.game_memory_state, memory_arena.total_size);
                         }
                         game_input = current->value;
                         frame_time = current->frame_delta;
@@ -695,7 +699,7 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
 					frame_time = 1.0f / 60.0f;
 				}
 
-                RenderGame(window_handle, &io, memory, frame_time, game_input, client_rect);
+                RenderGame(window_handle, &io, memory_arena, frame_time, game_input, client_rect);
                 ReleaseDC(window_handle, device_context);
 
                 QueryPerformanceCounter(&start_counter);

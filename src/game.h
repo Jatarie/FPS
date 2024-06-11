@@ -169,6 +169,7 @@ struct Memory{
     u32 size;
 };
 
+
 #include "windows.h"
 #include "gl/GL.h"
 

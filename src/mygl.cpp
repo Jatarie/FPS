@@ -294,8 +294,8 @@ void GenerateWorld(Block* world){
 	block_map[BlockType_Dirt][Face_Back] = v2 { 8, 6 };
 
 	Box b;
-	b.min = v3{-100, -100, -100};
-	b.max = v3{100, 100, 100};
+	b.min = v3{-64, -64, -64};
+	b.max = v3{64, 64, 64};
 	octtree = (OctTree*)Malloc(sizeof(OctTree));
 	octtree->Init(4, b);
 
@@ -669,8 +669,7 @@ Entity* CheckCollisionRay(Raycast ray, BVHTree* tree){
 	return e;
 }
 
-
-Entity* CheckCollision(Entity* a, BVHTree* tree){
+Entity* CheckCollision(Entity* a, OctTree* tree) {
 	TIMED_FUNCTION
 	v3 a_low, a_high;
 	Entity* e = NULL;
@@ -683,44 +682,77 @@ Entity* CheckCollision(Entity* a, BVHTree* tree){
 	a_high.y = a->world_p.y + a->bounding_box.max.y;
 	a_high.z = a->world_p.z + a->bounding_box.max.z;
 
-	b32 collision = 1;
-	if(a_low.x > tree->bounding_box.max.x){
-		collision = 0;
-	}
-	if(a_low.y > tree->bounding_box.max.y){
-		collision =  0;
-	}
-	if(a_low.z > tree->bounding_box.max.z){
-		collision =  0;
-	}
-	if(a_high.x < tree->bounding_box.min.x){
-		collision =  0;
-	}
-	if(a_high.y < tree->bounding_box.min.y){
-		collision =  0;
-	}
-	if(a_high.z < tree->bounding_box.min.z){
-		collision =  0;
-	}
-	if(collision){
-		e = tree->e;
-		if(tree->left){
-			e = CheckCollision(a, tree->left);
-			if(e){
-				return e;
+	if(tree->depth == 0){
+		for(u32 i = 0; i < tree->members.count; i++){
+			Entity* test = ((Entity**)(tree->members.data))[i];
+			if(BoxIntersection(a, test)){
+				return test;
 			}
 		}
-		if(tree->right){
-			e = CheckCollision(a, tree->right);
-			if(e){
-				return e;
+	}
+	else{
+		for(u32 i = 0; i < 8; i ++){
+			OctTree* child = tree->children[i];
+			if (BoxIntersection(a, child->bounding_box)){
+				return CheckCollision(a, child);
 			}
 		}
 	}
 	return e;
+
 }
 
-Entity* CheckCollision(v3 pos, Box bounding_box, BVHTree* tree) {
+//Entity* CheckCollision(Entity* a, OctTree* tree){
+//	TIMED_FUNCTION
+//	v3 a_low, a_high;
+//	Entity* e = NULL;
+//
+//	a_low.x = a->world_p.x + a->bounding_box.min.x;
+//	a_low.y = a->world_p.y + a->bounding_box.min.y;
+//	a_low.z = a->world_p.z + a->bounding_box.min.z;
+//
+//	a_high.x = a->world_p.x + a->bounding_box.max.x;
+//	a_high.y = a->world_p.y + a->bounding_box.max.y;
+//	a_high.z = a->world_p.z + a->bounding_box.max.z;
+//
+//	b32 collision = 1;
+//	if(a_low.x > tree->bounding_box.max.x){
+//		collision = 0;
+//	}
+//	if(a_low.y > tree->bounding_box.max.y){
+//		collision =  0;
+//	}
+//	if(a_low.z > tree->bounding_box.max.z){
+//		collision =  0;
+//	}
+//	if(a_high.x < tree->bounding_box.min.x){
+//		collision =  0;
+//	}
+//	if(a_high.y < tree->bounding_box.min.y){
+//		collision =  0;
+//	}
+//	if(a_high.z < tree->bounding_box.min.z){
+//		collision =  0;
+//	}
+//	if(collision){
+//		e = tree->e;
+//		if(tree->left){
+//			e = CheckCollision(a, tree->left);
+//			if(e){
+//				return e;
+//			}
+//		}
+//		if(tree->right){
+//			e = CheckCollision(a, tree->right);
+//			if(e){
+//				return e;
+//			}
+//		}
+//	}
+//	return e;
+//}
+
+Entity* CheckCollision(v3 pos, Box bounding_box, OctTree* tree) {
 	TIMED_FUNCTION
 	Entity a;
 	a.world_p = pos;
@@ -820,34 +852,53 @@ void CameraMove(){
 	}
 
 	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
-	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
-	normalised_movement.y = normalised_movement.y + delta_y;
+//	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
+//	normalised_movement.y = normalised_movement.y + delta_y;
 
 	b32 valid_movement = true;
 
-	BVHTree* current = bvh_tree;
+	OctTree* current = octtree;
 
 	Entity* collision_entity;
 
 
 	v3 test_position = game_state->cam.world_p;
-//	test_position.x += normalised_movement.x;
-//	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
-//		test_position.x -= normalised_movement.x;
-//	}
-//	test_position.y += normalised_movement.y;
-//	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
-//		test_position.y -= normalised_movement.y;
-//		game_state->cam.velocity = 0;
-//	}
-//	test_position.z += normalised_movement.z;
-//	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
-//		test_position.z -= normalised_movement.z;
-//	}
+	test_position.x += normalised_movement.x;
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+		test_position.x -= normalised_movement.x;
+	}
+	test_position.y += normalised_movement.y;
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+		test_position.y -= normalised_movement.y;
+		game_state->cam.velocity = 0;
+	}
+	test_position.z += normalised_movement.z;
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+		test_position.z -= normalised_movement.z;
+	}
 
 	game_state->cam.world_p = test_position;
 
 	
+}
+
+
+v3 Colors[] = {
+			   v3{1, 0 ,0},
+			   v3{0, 1 ,0},
+			   v3{0, 0 ,1},
+			   v3{0, 1 ,1},
+			   v3{1, 1 ,1},
+			   v3{0.5, 0.5 ,1},
+};
+
+void DebugCollisionOutlines(RenderGroup* group ,OctTree* tree){
+	PushBoxOutline(group, tree->bounding_box, 0.05f, Colors[tree->depth]);
+	if(tree->children){
+		for(int i = 0; i < 8; i ++){
+			DebugCollisionOutlines(group, tree->children[i]);
+		}
+	}
 }
 
 void DebugCollisionOutlines(RenderGroup* group ,BVHTree* tree, u32 level, v3 color){
@@ -865,7 +916,7 @@ void DebugCollisionOutlines(RenderGroup* group ,BVHTree* tree, u32 level, v3 col
 }
 
 
-void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
+void RenderGame(HWND window, IO* io_in, Memory_Arena memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
 	TIMED_FUNCTION
 	persist b32 init = 0;
 	persist RenderGroup *group_world;
@@ -873,14 +924,17 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 	game_input = in_game_input;
 	frame_delta = in_frame_delta;
 
-
 	if (!init) {
 		srand(0);
 		init = 1;
-		game_state = (GameState*)memory.memory;
-		SetMemoryArena( { &(game_state->d_memory), memory.size - (u32)sizeof(GameState) });
+		SetMemoryArena(memory);
+		if(memory.list[0].block_size == memory.list[0].max_block_size){
+			game_state = (GameState*)Malloc(sizeof(GameState));
+		}
+		else{
+			game_state = (GameState*)memory.memory;
+		}
 		io = io_in;
-
 
 		if(!game_state->gl_render_context){
 			GetRenderContext(window);
@@ -917,12 +971,11 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 			Attribute_Color,
 		};
 		group_debug = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES);
+		group_debug->vertex_data_bytes = 0;
+		group_debug->vertex_data.count = 0;
+		group_debug->vertex_count = 0;
+		DebugCollisionOutlines(group_debug, octtree);
 	}
-
-
-	group_debug->vertex_data_bytes = 0;
-	group_debug->vertex_data.count = 0;
-	group_debug->vertex_count = 0;
 
 	v2 new_dimensions;
 	new_dimensions.x = (r32)client_rect.right - client_rect.left;
@@ -953,7 +1006,7 @@ void RenderGame(HWND window, IO* io_in, Memory memory, r32 in_frame_delta, Game_
 //		PushBoxOutline(group_debug, b, 0.05f, v3{1, 0, 1});
 //	}
 
-	//DebugCollisionOutlines(group_debug, bvh_tree, 0, v3{1, 0, 1});
+//	DebugCollisionOutlines(group_debug, bvh_tree, 0, v3{1, 0, 1});
 
 	DrawVertices(group_debug);
 	DrawVertices(group_world);
