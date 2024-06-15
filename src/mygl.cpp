@@ -1,21 +1,21 @@
-#include "game.h"
-#include "shader.h"
-#include "maths.h"
 #include <stdio.h>
-#include "datastructures.h"
-#include "mygl.h"
-#include "profile.h"
 #include "glm.hpp"
 #include "type_ptr.hpp"
+
+#include "mygl.h"
+#include "game.h"
+
+#include "maths.h"
+#include "datastructures.h"
+#include "profile.h"
+
+#include "shader.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
-
-//#include "mygltest.cpp"
-//#include "mygltesttext.cpp"
 
 #include "collision.cpp"
 
@@ -249,7 +249,7 @@ void PushMesh(Entity e, RenderGroup *group){
 	}
 }
 
-global OctTree* octtree;
+//global OctTree* octtree;
 
 u32 max_parents = 0;
 
@@ -285,8 +285,8 @@ void GenerateWorld(Block* world){
 	Box b;
 	b.min = v3{-10, -10, -10};
 	b.max = v3{(r32)world_width+10, (r32)world_height+10, (r32)world_depth+10};
-	octtree = (OctTree*)Malloc(sizeof(OctTree));
-	octtree->Init(0, b);
+	game_state->collision_tree = (OctTree*)Malloc(sizeof(OctTree));
+	game_state->collision_tree->Init(0, b);
 
 	for (u32 y = 0; y < world_height; y++) {
 		for (u32 z = 0; z < world_depth; z++) {
@@ -301,7 +301,7 @@ void GenerateWorld(Block* world){
 
 				world[index].world_p = { (r32)x+.5f, (r32)((s32)height), (r32)z+.5f };
 
-				octtree->Insert(&world[index]);
+				game_state->collision_tree->Insert(&world[index]);
 			}
 		}
 	}
@@ -607,7 +607,7 @@ void CameraMove(){
 
 	b32 valid_movement = true;
 
-	OctTree* current = octtree;
+	OctTree* current = game_state->collision_tree;
 
 	Entity* collision_entity;
 
@@ -718,11 +718,10 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 		}
 		else{
 			game_state = (GameState*)memory->memory;
+			SetUpGL();
 		}
 
 //		DebugCollisionOutlines(game_state->render_groups[RenderGroups_Debug], octtree);
-
-
 	}
 
 
@@ -749,7 +748,7 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 
 
 	game_state->raycast_collisions.Clear();
-	CheckCollisionRayWorld(Raycast { game_state->cam.world_p, raycast * 20 }, octtree);
+	CheckCollisionRayWorld(Raycast { game_state->cam.world_p, raycast * 20 }, game_state->collision_tree);
 
 	r32 distance = 1000000000.0f;
 	Entity* collided_entity = NULL;

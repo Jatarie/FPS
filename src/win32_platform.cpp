@@ -1,11 +1,12 @@
+#include <windows.h>
+#include <gl/gl.h>
+#include "wglext.h"
 #include "lib.h"
 #include "game.h"
-#include <windows.h>
 #include "windowsx.h"
 #include <xinput.h>
 #include <dsound.h>
 #include "myMalloc.h"
-
 
 #define PI 3.14159265359f
 
@@ -577,7 +578,7 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
     r32 frame_time = 1/target_frame_rate;
     u64 frame_counter = 0;
 
-	GetMemoryArena(4096, GIGABYTES(2), GIGABYTES(256));
+	GetMemoryArena(4096, GIGABYTES(1), GIGABYTES(256));
 
     timeBeginPeriod(1);
 
@@ -654,8 +655,8 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
 							VirtualFree(input_recording.game_memory_state,0, MEM_RELEASE);
 						}
                         input_recording.game_memory_state = VirtualAlloc(offset, GIGABYTES(2), MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
-                        memcpy(input_recording.game_memory_state, memory_arena->memory, memory_arena->total_size);
-//                        MemoryCopy(input_recording.game_memory_state, memory_arena.memory, memory_arena.total_size);
+                        memcpy(input_recording.game_memory_state, memory_arena->memory, memory_arena->total_size - 8);
+//                        MemoryCopy(input_recording.game_memory_state, memory_arena->memory, memory_arena->total_size - 8);
                         input_recording.init = 1;
                     }
                     QueuePush(&input_recording.input_queue, game_input, frame_time);
@@ -670,11 +671,11 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
                         persist Input_Queue* current = input_recording.input_queue;
                         if(!input_recording.first_pass){
                             input_recording.first_pass = true;
-                            memcpy(memory_arena->memory, input_recording.game_memory_state, memory_arena->total_size);
+                            memcpy(memory_arena->memory, input_recording.game_memory_state, memory_arena->total_size - 8);
                         }
                         if(current == NULL){
                             current = input_recording.input_queue;
-                            memcpy(memory_arena->memory, input_recording.game_memory_state, memory_arena->total_size);
+                            memcpy(memory_arena->memory, input_recording.game_memory_state, memory_arena->total_size - 8);
                         }
                         game_input = current->value;
                         frame_time = current->frame_delta;

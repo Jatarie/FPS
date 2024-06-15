@@ -1,214 +1,9 @@
 #pragma once
-#include "game.h"
-#include "wglext.h"
+#include "windows.h"
 #include <gl/gl.h>
-#include "lib.h"
-#include "DataStructures.h"
-
-global Game_Input game_input;
-global r32 frame_delta;
-
-enum AttributeTypes{
-	Attribute_VertexPosition,
-	Attribute_WorldPosition,
-	Attribute_Normals,
-	Attribute_TextureCoordinates,
-	Attribute_TextureIndex,
-	Attribute_Color,
-};
-
-struct Vertex{
-    v3 position;
-    v3 normal;
-    v2 texture_coords;
-};
-
-enum TextureType{
-    TextureType_DIFFUSE,
-    TextureType_SPECULAR,
-};
-
-struct Texture{
-    GLuint id;
-    TextureType type;
-};
-
-struct Material{
-    GLuint diffuse;
-    GLuint specular;
-};
-
-struct Mesh {
-	Material material;
-	Texture texture;
-
-	u32 vertex_count;
-	Vertex* vertices;
-
-	u32 index_count;
-	u32* indices;
-};
-
-struct Model{
-    u32 mesh_count;
-    Mesh** meshes;
-};
-
-struct Raycast{
-	v3 origin;
-	v3 direction;
-};
-
-enum SpriteType{
-	Sprite_DirtTop,
-	Sprite_DirtSide,
-
-	Sprite_FurnaceFront,
-	Sprite_FurnaceBack,
-	Sprite_FurnaceTop,
-	Sprite_FurnaceBottom,
-	Sprite_FurnaceLeft,
-	Sprite_FurnaceRight,
-
-	Sprite_COUNT,
-};
-
-enum Faces{
-	Face_Top,
-	Face_Bottom,
-	Face_Front,
-	Face_Back,
-	Face_Left,
-	Face_Right,
-};
-
-enum BlockType {
-	BlockType_Furnace,
-	BlockType_Dirt,
-
-	BlockType_COUNT
-};
-
-struct Entity{
-	Mesh* mesh;
-	v3 world_p;
-	Box bounding_box;
-	r32 velocity;
-	r32 acceleration;
-};
-
-
-struct Block : Entity{
-	BlockType block_type;
-};
-
-struct Camera : Entity{
-    v3 camera_dir;
-    r32 camera_yaw;
-    r32 camera_pitch;
-};
-
-v2 block_map[BlockType_COUNT][6];
-
-
-static float cube_vertices[] = {
-	// positions         // normals         // texture coords
-	//BACK
-	0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // TR
-	0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // BR
-	-0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // TL
-	-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // BL
-	-0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // TL
-	0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // BR
-
-	//FRONT
-	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-	0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-	0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-	0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-	-0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-
-	//LEFT
-	-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // TR
-	-0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, //TL
-	-0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // BR
-	-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, //BL
-	-0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // BR
-	-0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, //TL
-
-	//RIGHT
-	0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // TR
-	0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // TL
-	0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // BR
-	0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // BL
-	0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // BR
-	0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // TL
-
-	//DOWN
-	-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-	0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-	0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-	0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-	-0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-
-	//UP
-	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-	0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-	0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-	0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-	-0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
-};
-
-struct VertexDataFormat{
-	u32 vertex_size_bytes;
-	u32 attrib_count;
-	u32* attributes;
-	u32* attribute_sizes;
-};
-
-enum TextureMap{
-	TextureMap_Atlas,
-	TextureMap_UI,
-	TextureMap_COUNT,
-};
-
-struct RenderGroup{
-	GLuint vao, vbo, shader_program, primitive_mode;
-	u32 vertex_data_bytes;
-	u32 vertex_count;
-	VertexDataFormat format;
-	Array vertex_data;
-	TextureMap texture_map;
-};
-
-enum RenderGroups{
-	RenderGroups_World,
-	RenderGroups_Debug,
-	RenderGroups_UI,
-	RenderGroups_Raycast,
-	RenderGroups_COUNT,
-};
-
-struct GameState{
-	b32 initialised;
-	HGLRC gl_render_context;
-	Camera cam;
-	v2 client_dimensions;
-	RenderGroup* render_groups[RenderGroups_COUNT];
-	Block world[10000];
-	Hash_Table* loaded_textures;
-	Array raycast_collisions;
-
-	Memory_Arena memory_arena;
-//	void* d_memory;
-	GLuint textures[TextureMap_COUNT];
-};
-
-
-static GameState* game_state;
+#include "wglext.h"
+#include "Lib.h"
+#include "game.h"
 
 typedef signed long long int khronos_ssize_t;
 typedef khronos_ssize_t GLsizeiptr;
@@ -221,6 +16,18 @@ typedef char GLchar;
 #define GL_LINK_STATUS 0x8B82
 #define GL_ELEMENT_ARRAY_BUFFER 0x8893
 #define GL_MIRRORED_REPEAT 0x8370
+
+
+#define GL_TEXTURE0 0x84C0
+#define GL_TEXTURE1 0x84C1
+#define GL_TEXTURE2 0x84C2
+#define GL_TEXTURE3 0x84C3
+#define GL_TEXTURE4 0x84C4
+#define GL_TEXTURE5 0x84C5
+#define GL_TEXTURE6 0x84C6
+#define GL_TEXTURE7 0x84C7
+#define GL_TEXTURE8 0x84C8
+#define GL_TEXTURE9 0x84C9
 
 
 typedef void WINAPI type_glGenVertexArrays( GLsizei n, GLuint *arrays);
@@ -358,16 +165,5 @@ void SetUpGL(){
     glUniform3f = (type_glUniform3f*)wglGetProcAddress("glUniform3f");
     glUniform4f = (type_glUniform4f*)wglGetProcAddress("glUniform4f");
 }
-
-#define GL_TEXTURE0 0x84C0
-#define GL_TEXTURE1 0x84C1
-#define GL_TEXTURE2 0x84C2
-#define GL_TEXTURE3 0x84C3
-#define GL_TEXTURE4 0x84C4
-#define GL_TEXTURE5 0x84C5
-#define GL_TEXTURE6 0x84C6
-#define GL_TEXTURE7 0x84C7
-#define GL_TEXTURE8 0x84C8
-#define GL_TEXTURE9 0x84C9
 
 
