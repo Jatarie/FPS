@@ -1,5 +1,6 @@
 #pragma once
 
+
 #if 1
     #define ASSERT(expression) if(!expression){*(int*)0 = 0;}
 #else
@@ -8,7 +9,6 @@
 
 
 #define b32 uint32_t
-
 
 #include "maths.h"
 

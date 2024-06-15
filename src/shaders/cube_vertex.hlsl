@@ -25,6 +25,6 @@ void main(){
 	                  v_worldPos.x, v_worldPos.y, v_worldPos.z, 1.0); // 4. column
 
 
-    gl_Position = u_projection * u_view * model * vec4(v_pos, 1);
+    gl_Position = u_projection* u_view * model * vec4(v_pos, 1);
     
 }

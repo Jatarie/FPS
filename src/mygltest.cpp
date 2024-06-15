@@ -213,7 +213,9 @@
      rot++;
 
      mat4 scale = CreateScaleMatrix({1.0, 1.0, 1.0});
-     mat4 rotation = CreateRotationMatrix(Normalize({1.0f, 1.0f, 1.0f}), rot);
+	 static u32 thingo = 0;
+	 thingo++;
+     mat4 rotation = CreateRotationMatrix(Normalize({1.0f, 1.0f, 1.0f}), thingo);
      mat4 translation = CreateTranslationMatrix({0, 1, 1.5f});
      mat4 model = scale * rotation * translation;
 

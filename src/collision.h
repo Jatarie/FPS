@@ -16,8 +16,8 @@ struct OctTree{
 	void Init(u32 depth, Box bounding_box) {
 		this->depth = depth;
 		this->bounding_box = bounding_box;
-		members = Array(1, sizeof(Entity*));
 		if(depth == 0){
+			members = Array(8, sizeof(Entity*));
 			return;
 		}
 		this->children = (OctTree**)Malloc(sizeof(OctTree*) * 8);
@@ -96,7 +96,9 @@ struct OctTree{
 	}
 
 	void Insert(Entity* e){
-		members.Add((void*) (&e));
+		if(depth == 0){
+			members.Add((void*) (&e));
+		}
 		if (depth > 0) {
 			for (u32 i = 0; i < 8; i++) {
 				if (BoxIntersection(e, children[i]->bounding_box)) {
@@ -111,7 +113,7 @@ b32 CheckCollisionRayFace(v3 point_1, v3 point_2, v3 ray_direction, b32 positive
 b32 CheckCollisionRayFace(v3 point_1, v3 point_2, v3 normal, v3 ray_direction);
 b32 CheckCollisionRayBox(Raycast ray, Box box);
 b32 CheckCollisionRayEntity(Raycast ray, Entity* entity);
-Entity* CheckCollisionRayWorld(Raycast ray, OctTree* tree);
+void CheckCollisionRayWorld(Raycast ray, OctTree* tree);
 Entity* CheckCollision(Entity* a, OctTree* tree);
 Entity* CheckCollision(v3 pos, Box bounding_box, OctTree* tree);
 //b32 WithinBounds(Entity* a, Entity* b, Dimension d);

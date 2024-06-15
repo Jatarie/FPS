@@ -69,6 +69,11 @@ GLuint LoadTexture(char* path_to_image){
 	return texture;
 }
 
+void LoadAllTextures(){
+	GLint atlas = LoadTexture("c:/code/FPS/src/assets/atlas.bmp");
+	game_state->textures[TextureMap_Atlas] = atlas;
+}
+
 Rect GetSprite(BlockType type, Faces face){
 	Rect r;
 	r.bottom_left = v2{block_map[type][face].x / 32.0f + 1/32.0f, block_map[type][face].y / 32.0f + 1/32.0f};
@@ -102,6 +107,8 @@ void MakeBlock(Block* block){
 	mesh->vertices = (Vertex*)Malloc(sizeof(Vertex) * 36);
 	memcpy(mesh->vertices, cube_vertices, sizeof(Vertex) * 36);
 	mesh->vertex_count = 36;
+
+	//TODO MS: MYSTERIOUS RANDOM NUMBER
 	mesh->texture.id = (u32)(((r32)rand()/RAND_MAX)+0.9f);
 
 
@@ -182,20 +189,18 @@ void DrawVertices(RenderGroup *group){
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    mat4 projection = CreatePerspectiveMatrix(ToRadians(100.0f), 0.01f, 1000.0f, 1280.0f, 720.0f);
+    mat4 projection = CreatePerspectiveMatrix(ToRadians(100.0f), 0.01f, 1000.0f, game_state->client_dimensions.x, game_state->client_dimensions.y);
     mat4 view = LookAt(game_state->cam.world_p, game_state->cam.camera_dir + game_state->cam.world_p);
+	static u32 thingo = 0;
 
 	glUseProgram(group->shader_program);
 	ShaderSetUniform(group->shader_program, "u_view", view);
     ShaderSetUniform(group->shader_program, "u_projection", projection);
 
-	GLint atlas = LoadTexture("c:/code/FPS/src/assets/atlas.bmp");
-
-	int samplers[2] = { 0, 1 };
-	ShaderSetUniform(group->shader_program, "u_textures[0]", 0);
+//	GLint atlas = LoadTexture("c:/code/FPS/src/assets/atlas.bmp");
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, atlas);
+	glBindTexture(GL_TEXTURE_2D, game_state->textures[group->texture_map]);
 
 	glDrawArrays(group->primitive_mode, 0, group->vertex_count);
 
@@ -244,29 +249,14 @@ void PushMesh(Entity e, RenderGroup *group){
 	}
 }
 
-global BVHTree* bvh_tree;
 global OctTree* octtree;
 
 u32 max_parents = 0;
 
-void Traverse(BVHTree* tree, u32 parents){
-	if(tree->left){
-		Traverse(tree->left, parents+1);
-	}
-	if(tree->right){
-		Traverse(tree->right, parents+1);
-	}
-	if(!tree->left && !tree->right){
-//		DebugOutput("%d\n", parents);
-		if(parents > max_parents){
-			max_parents = parents;
-		}
-	}	
-}
 
-global u32 world_width = 32;
+global u32 world_width = 64;
 global u32 world_height = 1;
-global u32 world_depth = 32;
+global u32 world_depth = 64;
 
 float Perlin(v3 in){
 	TIMED_FUNCTION
@@ -293,10 +283,10 @@ void GenerateWorld(Block* world){
 	block_map[BlockType_Dirt][Face_Back] = v2 { 8, 6 };
 
 	Box b;
-	b.min = v3{-100, -100, -100};
-	b.max = v3{100, 100, 100};
+	b.min = v3{-10, -10, -10};
+	b.max = v3{(r32)world_width+10, (r32)world_height+10, (r32)world_depth+10};
 	octtree = (OctTree*)Malloc(sizeof(OctTree));
-	octtree->Init(1, b);
+	octtree->Init(0, b);
 
 	for (u32 y = 0; y < world_height; y++) {
 		for (u32 z = 0; z < world_depth; z++) {
@@ -317,15 +307,17 @@ void GenerateWorld(Block* world){
 	}
 }
 
-RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count, char* vertex_shader, char* fragment_shader, GLuint primitive_mode){
+RenderGroup* CreateRenderGroup(u32* attribs, u32 attrib_count, char* vertex_shader, char* fragment_shader, GLuint primitive_mode, TextureMap texture_map){
 	TIMED_FUNCTION
 	RenderGroup *group = (RenderGroup*)Malloc(sizeof(RenderGroup));
 	group->vertex_data = Array(1024, 4);
 	group->format.attrib_count = attrib_count;
 	group->format.attribute_sizes = (u32*)Malloc(sizeof(u32) * attrib_count);
 	group->format.attributes = (u32*)Malloc(attrib_count * sizeof(u32));
+	group->format.vertex_size_bytes = 0;
 	group->shader_program = 0;
 	group->primitive_mode = primitive_mode;
+	group->texture_map = texture_map;
 	memcpy(group->format.attributes, attribs, attrib_count*sizeof(u32));
 	for(int i = 0 ; i < attrib_count; i ++){
 		switch(attribs[i]){
@@ -609,9 +601,9 @@ void CameraMove(){
 		game_state->cam.velocity = 5.0f;
 	}
 
-	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
-	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
-	normalised_movement.y = normalised_movement.y + delta_y;
+//	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
+//	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
+//	normalised_movement.y = normalised_movement.y + delta_y;
 
 	b32 valid_movement = true;
 
@@ -659,55 +651,7 @@ void DebugCollisionOutlines(RenderGroup* group ,OctTree* tree){
 	}
 }
 
-void DebugCollisionOutlines(RenderGroup* group ,BVHTree* tree, u32 level, v3 color){
-	TIMED_FUNCTION
-	if(level < 10){
-		Box b = tree->bounding_box;
-		PushBoxOutline(group, b, 0.05f, color);
-	}
-	if(tree->left){
-		DebugCollisionOutlines(group, tree->left, level+1, v3{1, 0, 0});
-	}
-	if(tree->right){
-		DebugCollisionOutlines(group, tree->right, level+1, v3{1, 0, 1});
-	}
-}
-
-
-void RenderGame(HWND window, IO* io_in, Memory_Arena memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
-	TIMED_FUNCTION
-	persist b32 init = 0;
-	persist RenderGroup *group_world;
-	persist RenderGroup *group_debug;
-	persist RenderGroup *group_raycast;
-	game_input = in_game_input;
-	frame_delta = in_frame_delta;
-
-	if (!init) {
-		srand(0);
-		init = 1;
-		SetMemoryArena(memory);
-		if(memory.list[0].block_size == memory.list[0].max_block_size){
-			game_state = (GameState*)Malloc(sizeof(GameState));
-		}
-		else{
-			game_state = (GameState*)memory.memory;
-		}
-		io = io_in;
-
-		if(!game_state->gl_render_context){
-			GetRenderContext(window);
-
-			game_state->cam.camera_dir = { 0, 0, 1 };
-			game_state->cam.world_p = { 5, 20, 5 };
-			game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
-			game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
-
-		}
-		SetUpGL();
-
-		GenerateWorld(game_state->world);
-
+void InitRenderGroups(){
 		u32 world_attribs[] = { 
 			Attribute_VertexPosition, 
 			Attribute_Normals, 
@@ -716,31 +660,75 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena memory, r32 in_frame_delta,
 			Attribute_TextureIndex
 		};
 
-		group_world = CreateRenderGroup(world_attribs, ARRAYCOUNT(world_attribs), "c:/code/fps/src/shaders/cube_vertex.hlsl", "c:/code/fps/src/shaders/cube_fragment.hlsl", GL_TRIANGLES);
-		group_world->vertex_data_bytes = 0;
-		group_world->vertex_data.count = 0;
-		group_world->vertex_count = 0;
-
-		for(int i = 0; i < world_width * world_height * world_depth; i ++){
-			PushMesh(game_state->world[i], group_world);
-		}
+		game_state->render_groups[RenderGroups_World] = CreateRenderGroup(world_attribs, ARRAYCOUNT(world_attribs), "c:/code/fps/src/shaders/cube_vertex.hlsl", "c:/code/fps/src/shaders/cube_fragment.hlsl", GL_TRIANGLES, TextureMap_Atlas);
 
 		u32 debug_attribs[] = { 
 			Attribute_VertexPosition,
 			Attribute_Color,
 		};
-		group_debug = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES);
-		group_debug->vertex_data_bytes = 0;
-		group_debug->vertex_data.count = 0;
-		group_debug->vertex_count = 0;
-		DebugCollisionOutlines(group_debug, octtree);
+		game_state->render_groups[RenderGroups_Debug]  = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES, TextureMap_Atlas);
 
-		group_raycast = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES);
+		game_state->render_groups[RenderGroups_Raycast] = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES, TextureMap_Atlas);
+		game_state->render_groups[RenderGroups_UI] = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/ui_vertex.hlsl", "c:/code/fps/src/shaders/ui_fragment.hlsl", GL_TRIANGLES, TextureMap_Atlas);
+
+}
+
+void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
+	TIMED_FUNCTION
+	persist b32 init = 0;
+	game_input = in_game_input;
+	frame_delta = in_frame_delta;
+
+	if (!init) {
+		srand(0);
+		init = 1;
+		SetMemoryArena(memory);
+
+		io = io_in;
+		if(memory->list[0].block_size == memory->list[0].max_block_size){
+			game_state = (GameState*)Malloc(sizeof(GameState));
+			GetRenderContext(window);
+			SetUpGL();
+			InitRenderGroups();
+			game_state->raycast_collisions = Array(8, sizeof(Entity*));
+			GenerateWorld(game_state->world);
+
+			for(int i = 0; i < world_width * world_height * world_depth; i ++){
+				PushMesh(game_state->world[i], game_state->render_groups[RenderGroups_World]);
+			}
+
+			game_state->cam.camera_dir = { 0, 0, 1 };
+			game_state->cam.world_p = { 5, 20, 5 };
+			game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
+			game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
+
+			game_state->client_dimensions.x = client_rect.right;
+			game_state->client_dimensions.y = client_rect.bottom;
+
+			Box b;
+			b.min = v3 { -1.0f/game_state->client_dimensions.x*10, -1.0f/game_state->client_dimensions.y, 0 };
+			b.max = v3 { 1.0f/game_state->client_dimensions.x*10, 1.0f/game_state->client_dimensions.y, 0 };
+			PushBox( game_state->render_groups[RenderGroups_UI], b, v3 { 1, 1, 1 });
+
+			b.min = v3 { -1.0f/game_state->client_dimensions.x, -1.0f/game_state->client_dimensions.y*10, 0};
+			b.max = v3 { 1.0f/game_state->client_dimensions.x, 1.0f/game_state->client_dimensions.y*10, 0 };
+			PushBox(game_state->render_groups[RenderGroups_UI], b, v3 { 1, 1, 1 });
+
+			LoadAllTextures();
+		}
+		else{
+			game_state = (GameState*)memory->memory;
+		}
+
+//		DebugCollisionOutlines(game_state->render_groups[RenderGroups_Debug], octtree);
+
+
 	}
 
-	group_raycast->vertex_data_bytes = 0;
-	group_raycast->vertex_data.count = 0;
-	group_raycast->vertex_count = 0;
+
+	game_state->render_groups[RenderGroups_Raycast]->vertex_data_bytes = 0;
+	game_state->render_groups[RenderGroups_Raycast]->vertex_data.count = 0;
+	game_state->render_groups[RenderGroups_Raycast]->vertex_count = 0;
 
 	v2 new_dimensions;
 	new_dimensions.x = (r32)client_rect.right - client_rect.left;
@@ -760,22 +748,35 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena memory, r32 in_frame_delta,
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-	if (Entity* e = CheckCollisionRayWorld(Raycast{game_state->cam.world_p, raycast*20}, octtree)) {
+	game_state->raycast_collisions.Clear();
+	CheckCollisionRayWorld(Raycast { game_state->cam.world_p, raycast * 20 }, octtree);
+
+	r32 distance = 1000000000.0f;
+	Entity* collided_entity = NULL;
+	for(u32 i = 0; i < game_state->raycast_collisions.count; i++){
+		Entity* e = ((Entity**)(game_state->raycast_collisions.data))[i];
+		v3 distance_to_entity = e->world_p - game_state->cam.world_p;
+		r32 magnitude = abs(Inner(distance_to_entity, distance_to_entity));
+		if(magnitude < distance){
+			collided_entity = e;
+			distance = magnitude;
+		}
+	}
+	if(collided_entity){
 		Box b;
-		b.min.x = e->world_p.x - 0.5f;
-		b.min.y = e->world_p.y - 0.5f;
-		b.min.z = e->world_p.z - 0.5f;
-		b.max.x = e->world_p.x + 0.5f;
-		b.max.y = e->world_p.y + 0.5f;
-		b.max.z = e->world_p.z + 0.5f;
-		PushBoxOutline(group_raycast, b, 0.05f, v3{1, 0, 1});
+		b.min.x = collided_entity->world_p.x - 0.5f;
+		b.min.y = collided_entity->world_p.y - 0.5f;
+		b.min.z = collided_entity->world_p.z - 0.5f;
+		b.max.x = collided_entity->world_p.x + 0.5f;
+		b.max.y = collided_entity->world_p.y + 0.5f;
+		b.max.z = collided_entity->world_p.z + 0.5f;
+		PushBoxOutline(game_state->render_groups[RenderGroups_Raycast], b, 0.05f, v3{1, 0, 1});
 	}
 
-//	DebugCollisionOutlines(group_raycast, octtree, 0, v3{1, 0, 1});
-
-	DrawVertices(group_raycast);
-	DrawVertices(group_debug);
-	DrawVertices(group_world);
+	DrawVertices(game_state->render_groups[RenderGroups_Raycast]);
+	DrawVertices(game_state->render_groups[RenderGroups_Debug]);
+	DrawVertices(game_state->render_groups[RenderGroups_World]);
+	DrawVertices(game_state->render_groups[RenderGroups_UI]);
 
 	HDC device_context = GetDC(window);
 	SwapBuffers(device_context);

@@ -2,6 +2,8 @@
 #include "game.h"
 #include "wglext.h"
 #include <gl/gl.h>
+#include "lib.h"
+#include "DataStructures.h"
 
 global Game_Input game_input;
 global r32 frame_delta;
@@ -95,7 +97,6 @@ struct Entity{
 	r32 acceleration;
 };
 
-#include "DataStructures.h"
 
 struct Block : Entity{
 	BlockType block_type;
@@ -108,10 +109,6 @@ struct Camera : Entity{
 };
 
 v2 block_map[BlockType_COUNT][6];
-
-
-
-//global v2 sprite_coordinates[32*32];
 
 
 static float cube_vertices[] = {
@@ -172,17 +169,27 @@ struct VertexDataFormat{
 	u32* attribute_sizes;
 };
 
+enum TextureMap{
+	TextureMap_Atlas,
+	TextureMap_UI,
+	TextureMap_COUNT,
+};
+
 struct RenderGroup{
 	GLuint vao, vbo, shader_program, primitive_mode;
 	u32 vertex_data_bytes;
 	u32 vertex_count;
 	VertexDataFormat format;
 	Array vertex_data;
+	TextureMap texture_map;
 };
 
 enum RenderGroups{
-	RenderGroup_World = 0,
-	RenderGroup_Debug = 1,
+	RenderGroups_World,
+	RenderGroups_Debug,
+	RenderGroups_UI,
+	RenderGroups_Raycast,
+	RenderGroups_COUNT,
 };
 
 struct GameState{
@@ -190,12 +197,14 @@ struct GameState{
 	HGLRC gl_render_context;
 	Camera cam;
 	v2 client_dimensions;
-	RenderGroup* groups;
+	RenderGroup* render_groups[RenderGroups_COUNT];
 	Block world[10000];
 	Hash_Table* loaded_textures;
+	Array raycast_collisions;
 
 	Memory_Arena memory_arena;
 //	void* d_memory;
+	GLuint textures[TextureMap_COUNT];
 };
 
 

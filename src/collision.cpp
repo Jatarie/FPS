@@ -1,5 +1,4 @@
 #include "mygl.h"
-#include "lib.h"
 #include "collision.h"
 
 b32 BoxIntersection(v3 a, Box b){
@@ -133,6 +132,8 @@ b32 CheckCollisionRayBox(Raycast ray, Box box){
 	box.min -= ray.origin;
 	box.max -= ray.origin;
 
+	ray.origin = v3 { 0, 0, 0 };
+
 	b32 collision = BoxIntersection(ray.origin, box);
 	collision = collision || ((ray.origin.x < box.min.x) && CheckCollisionRayFace(v3 { box.min.x, box.min.y, box.min.z }, v3 { box.min.x, box.max.y, box.max.z }, v3Left(), ray.direction));
 	collision = collision || ((ray.origin.x > box.max.x) && CheckCollisionRayFace(v3 { box.max.x, box.min.y, box.min.z }, v3 { box.max.x, box.max.y, box.max.z }, v3Right(), ray.direction));
@@ -150,8 +151,7 @@ b32 CheckCollisionRayEntity(Raycast ray, Entity* entity){
 	return CheckCollisionRayBox(ray, box);
 }
 
-
-Entity* CheckCollisionRayWorld(Raycast ray, OctTree* tree) {
+void CheckCollisionRayWorld(Raycast ray, OctTree* tree) {
 	TIMED_FUNCTION;
 
 	b32 collision = CheckCollisionRayBox(ray, tree->bounding_box);
@@ -162,20 +162,16 @@ Entity* CheckCollisionRayWorld(Raycast ray, OctTree* tree) {
 			for(int i = 0; i < tree->members.count; i++){
 				Entity* test_entity = ((Entity**)tree->members.data)[i];
 				if (CheckCollisionRayEntity(ray, test_entity)) {
-					return test_entity;
+					game_state->raycast_collisions.Add((void*) (&test_entity));
 				}
 			}
 		}
 		else {
 			for (u32 i = 0; i < 8; i++) {
-				e = CheckCollisionRayWorld(ray, tree->children[i]);
-				if (e) {
-					break;
-				}
+				CheckCollisionRayWorld(ray, tree->children[i]);
 			}
 		}
 	}
-	return e;
 }
 
 Entity* CheckCollision(Entity* a, OctTree* tree) {
@@ -203,7 +199,10 @@ Entity* CheckCollision(Entity* a, OctTree* tree) {
 		for(u32 i = 0; i < 8; i ++){
 			OctTree* child = tree->children[i];
 			if (BoxIntersection(a, child->bounding_box)){
-				return CheckCollision(a, child);
+				e = CheckCollision(a, child);
+				if(e){
+					return e;
+				}
 			}
 		}
 	}
