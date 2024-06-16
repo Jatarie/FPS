@@ -655,13 +655,11 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
 							VirtualFree(input_recording.game_memory_state,0, MEM_RELEASE);
 						}
                         input_recording.game_memory_state = VirtualAlloc(offset, GIGABYTES(2), MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
-                        memcpy(input_recording.game_memory_state, memory_arena->memory, memory_arena->total_size - 8);
-//                        MemoryCopy(input_recording.game_memory_state, memory_arena->memory, memory_arena->total_size - 8);
+                        memcpy(input_recording.game_memory_state, memory_arena->memory, memory_arena->total_size);
                         input_recording.init = 1;
                     }
                     QueuePush(&input_recording.input_queue, game_input, frame_time);
                 }
-
                 else if(!recording){
                     input_recording.init = 0;
                 }
@@ -671,17 +669,20 @@ int CALLBACK WinMain(HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lps
                         persist Input_Queue* current = input_recording.input_queue;
                         if(!input_recording.first_pass){
                             input_recording.first_pass = true;
-                            memcpy(memory_arena->memory, input_recording.game_memory_state, memory_arena->total_size - 8);
+                            memcpy(memory_arena->memory, input_recording.game_memory_state, memory_arena->total_size);
                         }
                         if(current == NULL){
                             current = input_recording.input_queue;
-                            memcpy(memory_arena->memory, input_recording.game_memory_state, memory_arena->total_size - 8);
+                            memcpy(memory_arena->memory, input_recording.game_memory_state, memory_arena->total_size);
                         }
                         game_input = current->value;
                         frame_time = current->frame_delta;
                         current = current->next;
                     }
                 }
+				else{
+					input_recording.first_pass = false;
+				}
 
                 if(frame_counter % (u32)target_frame_rate == 0){
                     char buf[255];

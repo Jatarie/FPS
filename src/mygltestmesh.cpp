@@ -102,8 +102,8 @@ Mesh* LoadMesh(aiMesh* ai_mesh, mat4 transform){
     mesh->indices = index_data;
     mesh->vertices = vertex_data;
 
-    GLuint albedo = LoadTexture("c:/code/FPS/src/models/guitar/textures/1001_albedo.jpg");
-    GLuint specular = LoadTexture("c:/code/FPS/src/models/guitar/textures/1001_metallic.jpg");
+    GLuint albedo = LoadTextureFromFile("c:/code/FPS/src/models/guitar/textures/1001_albedo.jpg");
+    GLuint specular = LoadTextureFromFile("c:/code/FPS/src/models/guitar/textures/1001_metallic.jpg");
 
     mesh->material.diffuse = albedo;
     mesh->material.specular = specular;
@@ -111,7 +111,7 @@ Mesh* LoadMesh(aiMesh* ai_mesh, mat4 transform){
     return mesh;
 }
 
-GLuint LoadTexture(char* path_to_image);
+GLuint LoadTextureFromFile(char* path_to_image);
 
 Model* LoadModel(){
     Assimp::Importer importer;

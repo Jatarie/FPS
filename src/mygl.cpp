@@ -19,7 +19,9 @@
 
 #include "collision.cpp"
 
-GLuint LoadTexture(char* path_to_image){
+void PushEntityOutline(RenderGroup* group , Entity* e, r32 thickness, v3 color);
+
+GLuint LoadTextureFromFile(char* path_to_image){
 	if(!game_state->loaded_textures){
 		game_state->loaded_textures = game_state->loaded_textures->Create(100);
 	}
@@ -69,9 +71,71 @@ GLuint LoadTexture(char* path_to_image){
 	return texture;
 }
 
+void DrawLetter(char letter, u32* screen_x, u32* screen_y, stbtt_bakedchar* cdata, ColorRGBA8* screen, unsigned char* temp_bitmap){
+	u32 l_i = letter - 32;
+	u32 letter_height = cdata[l_i].y1 - cdata[l_i].y0;
+	u32 letter_width = cdata[l_i].x1 - cdata[l_i].x0;
+	
+	for(u32 y = 0; y < letter_height; y++){ 
+		for (u32 x = 0; x < letter_width; x++) {
+			u32 index_y = (y + *screen_y + (u32)cdata[l_i].yoff);
+			u32 index_x = (x + *screen_x);
+
+			if (index_y < 0 || index_y >= game_state->client_dimensions.y || index_x < 0 || index_x >= game_state->client_dimensions.x){
+				break;
+			}
+
+			screen[index_y * (u32)game_state->client_dimensions.x + index_x].r = temp_bitmap[(y+cdata[l_i].y0)*256+(x+cdata[l_i].x0)];
+			screen[index_y * (u32)game_state->client_dimensions.x + index_x].g = temp_bitmap[(y+cdata[l_i].y0)*256+(x+cdata[l_i].x0)];
+			screen[index_y * (u32)game_state->client_dimensions.x + index_x].b = temp_bitmap[(y+cdata[l_i].y0)*256+(x+cdata[l_i].x0)];
+			screen[index_y * (u32)game_state->client_dimensions.x + index_x].a = temp_bitmap[(y+cdata[l_i].y0)*256+(x+cdata[l_i].x0)];
+		}
+	}
+	*screen_x += cdata[l_i].xadvance;
+}
+
+void DrawString(char* string, u32* screen_x, u32* screen_y, stbtt_bakedchar* cdata, ColorRGBA8* screen, unsigned char* temp_bitmap){
+	for (u32 i = 0; i < strlen(string); i++){
+		DrawLetter(string[i], screen_x, screen_y, cdata, screen, temp_bitmap);
+	}
+}
+
+GLuint GetUITexture(){
+	unsigned char temp_bitmap[256*256];
+	stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
+	GLuint texture;
+
+	File times = io->ReadEntireFile("c:/windows/fonts/times.ttf");
+	stbtt_BakeFontBitmap((const unsigned char*)times.memory,0, 40.0, temp_bitmap,256,256, 32,96, cdata); // no guarantee this fits!
+	// can free ttf_buffer at this point
+	ColorRGBA8* screen = (ColorRGBA8*)Malloc(sizeof(ColorRGBA8) * game_state->client_dimensions.x * game_state->client_dimensions.y);
+
+	u32 screen_x = 0;
+	u32 screen_y = 100;
+
+	DrawString("Hello, Fuck off lmfao.!?", &screen_x, &screen_y, cdata, screen, temp_bitmap);
+
+	screen_x = 400;
+	screen_y = 700;
+	DrawString("Hello, Fuck off lmfao thing interesting what.!?", &screen_x, &screen_y, cdata, screen, temp_bitmap);
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (u32)game_state->client_dimensions.x,(u32)game_state->client_dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, screen);
+	Free(screen);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	return texture;
+}
+
 void LoadAllTextures(){
-	GLint atlas = LoadTexture("c:/code/FPS/src/assets/atlas.bmp");
-	game_state->textures[TextureMap_Atlas] = atlas;
+	game_state->textures[TextureMap_Atlas] = LoadTextureFromFile("c:/code/FPS/src/assets/atlas.bmp");
+
+	game_state->textures[TextureMap_UI] = GetUITexture();
 }
 
 Rect GetSprite(BlockType type, Faces face){
@@ -151,6 +215,7 @@ void MakeBlock(Block* block){
 
 v3 raycast;
 
+
 void RaycastThing(mat4 view, mat4 projection){ 	
 	TIMED_FUNCTION
 	v4 mouse_coordinates = { 0 };
@@ -171,6 +236,27 @@ void RaycastThing(mat4 view, mat4 projection){
 	raycast.x = result.x;
 	raycast.y = result.y;
 	raycast.z = result.z;
+
+	game_state->render_groups[RenderGroups_Raycast]->vertex_data_bytes = 0;
+	game_state->render_groups[RenderGroups_Raycast]->vertex_data.count = 0;
+	game_state->render_groups[RenderGroups_Raycast]->vertex_count = 0;
+	game_state->raycast_collisions.Clear();
+	CheckCollisionRayWorld(Raycast { game_state->cam.world_p, raycast * 20 }, game_state->collision_tree);
+
+	r32 distance = 1000000000.0f;
+	Entity* collided_entity = NULL;
+	for(u32 i = 0; i < game_state->raycast_collisions.count; i++){
+		Entity* e = ((Entity**)(game_state->raycast_collisions.data))[i];
+		v3 distance_to_entity = e->world_p - game_state->cam.world_p;
+		r32 magnitude = abs(Inner(distance_to_entity, distance_to_entity));
+		if(magnitude < distance){
+			collided_entity = e;
+			distance = magnitude;
+		}
+	}
+	if(collided_entity){
+		PushEntityOutline(game_state->render_groups[RenderGroups_Raycast], collided_entity, 0.05f, v3{1, 0, 1});
+	}
 
 }
 
@@ -203,7 +289,6 @@ void DrawVertices(RenderGroup *group){
 	glBindTexture(GL_TEXTURE_2D, game_state->textures[group->texture_map]);
 
 	glDrawArrays(group->primitive_mode, 0, group->vertex_count);
-
 
 	for(int i = 0 ; i < group->format.attrib_count; i ++){
 		glDisableVertexAttribArray(i);
@@ -282,11 +367,6 @@ void GenerateWorld(Block* world){
 	block_map[BlockType_Dirt][Face_Front] = v2 { 8, 6 };
 	block_map[BlockType_Dirt][Face_Back] = v2 { 8, 6 };
 
-	Box b;
-	b.min = v3{-10, -10, -10};
-	b.max = v3{(r32)world_width+10, (r32)world_height+10, (r32)world_depth+10};
-	game_state->collision_tree = (OctTree*)Malloc(sizeof(OctTree));
-	game_state->collision_tree->Init(0, b);
 
 	for (u32 y = 0; y < world_height; y++) {
 		for (u32 z = 0; z < world_depth; z++) {
@@ -360,20 +440,24 @@ void PushRect(RenderGroup* group, Box b, Dimension d, v3 color){
 		v[0].position.x = b.min.x;
 		v[0].position.y = b.min.y;
 		v[0].position.z = b.min.z;
+		v[0].texture_coords = v2 { 0, 1 };
 
 		v[1].position.x = b.min.x;
 		v[1].position.y = b.max.y;
 		v[1].position.z = b.min.z;
+		v[1].texture_coords = v2 { 0, 0 };
 
 		v[2].position.x = b.max.x;
 		v[2].position.y = b.max.y;
 		v[2].position.z = b.min.z;
+		v[2].texture_coords = v2 { 1, 0 };
 
 		v[3] = v[2];
 
 		v[4].position.x = b.max.x;
 		v[4].position.y = b.min.y;
 		v[4].position.z = b.min.z;
+		v[4].texture_coords = v2 { 1, 1 };
 
 		v[5] = v[0];
 	}
@@ -422,9 +506,26 @@ void PushRect(RenderGroup* group, Box b, Dimension d, v3 color){
 		v[5] = v[0];
 	}
 
-	for(int v_i = 0; v_i < 6; v_i++){
-		PushVertexData((r32*)&v[v_i].position, sizeof(v3), group);
-		PushVertexData((r32*)&color, sizeof(v3), group);
+	for (int v_i = 0; v_i < 6; v_i++) {
+		for (int a = 0; a < group->format.attrib_count; a++) {
+			switch (group->format.attributes[a]) {
+				case Attribute_VertexPosition : {
+					PushVertexData((r32 *)&v[v_i].position, sizeof(v3), group);
+				} break;
+				case Attribute_Normals: {
+				} break;
+				case Attribute_TextureCoordinates: {
+					PushVertexData((r32 *)&v[v_i].texture_coords, sizeof(v2), group);
+				} break;
+				case Attribute_WorldPosition: {
+				} break;
+				case Attribute_TextureIndex: {
+				} break;
+				case Attribute_Color: {
+					PushVertexData((r32 *)&color, sizeof(v3), group);
+				} break;
+			}
+		}
 		group->vertex_count++;
 	}
 }
@@ -541,33 +642,33 @@ void PushBoxOutline(RenderGroup* group ,Box b, r32 thickness, v3 color){
 	}
 }
 
-void CameraMove(){
-	TIMED_FUNCTION
+void PushEntityOutline(RenderGroup* group , Entity* e, r32 thickness, v3 color) {
+		Box b;
+		b.min.x = e->world_p.x - 0.5f;
+		b.min.y = e->world_p.y - 0.5f;
+		b.min.z = e->world_p.z - 0.5f;
+		b.max.x = e->world_p.x + 0.5f;
+		b.max.y = e->world_p.y + 0.5f;
+		b.max.z = e->world_p.z + 0.5f;
+		PushBoxOutline(group, b, thickness, color);
+}
 
-	v3 unnormalised_movement = { 0 };
 
-	r32 movement_speed = 10;
-	if (game_input.move_forward.is_down) {
-		unnormalised_movement += game_state->cam.camera_dir;
-		unnormalised_movement.y = 0;
+b32 InContact(){
+	v3 normalised_movement = v3 { 0, 0, 0 };
+	r32 velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
+	r32 delta_y = velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
+	normalised_movement.y = normalised_movement.y + delta_y;
+
+	v3 test_position = game_state->cam.world_p;
+	test_position.y += normalised_movement.y;
+	if (CheckCollision(test_position, game_state->cam.bounding_box, game_state->collision_tree)){
+		return true;
 	}
-	if (game_input.move_back.is_down) {
-		unnormalised_movement -= game_state->cam.camera_dir;
-		unnormalised_movement.y = 0;
-	}
-	if (game_input.move_right.is_down) {
-		unnormalised_movement += Normalize(Cross(v3_up, game_state->cam.camera_dir));
-	}
-	if (game_input.move_left.is_down) {
-		unnormalised_movement -= Normalize(Cross(v3_up, game_state->cam.camera_dir));
-	}
-	if (game_input.move_down.is_down) {
-		unnormalised_movement.y = -1;
-	}
-	if (game_input.move_up.is_down) {
-		unnormalised_movement.y = 1;
-	}
-	
+	return false;
+}
+
+void CameraRotate(){
 	r32 sensitivity = 0.4f;
 	if (game_input.mouse_diff.x > 100 || game_input.mouse_diff.y > 100){}
 	else {
@@ -594,42 +695,64 @@ void CameraMove(){
 		game_state->cam.camera_dir.y = sin_pitch;
 		game_state->cam.camera_dir = Normalize(game_state->cam.camera_dir);
 	}
+}
 
+void CameraMove(){
+	TIMED_FUNCTION
+	CameraRotate();
+
+	v3 unnormalised_movement = { 0 };
+
+	r32 movement_speed = 10;
+	if (game_input.move_forward.is_down) {
+		unnormalised_movement += game_state->cam.camera_dir;
+		unnormalised_movement.y = 0;
+	}
+	if (game_input.move_back.is_down) {
+		unnormalised_movement -= game_state->cam.camera_dir;
+		unnormalised_movement.y = 0;
+	}
+	if (game_input.move_right.is_down) {
+		unnormalised_movement += Normalize(Cross(v3_up, game_state->cam.camera_dir));
+	}
+	if (game_input.move_left.is_down) {
+		unnormalised_movement -= Normalize(Cross(v3_up, game_state->cam.camera_dir));
+	}
+	if (game_input.move_down.is_down) {
+		unnormalised_movement.y = -1;
+	}
+	if (game_input.move_up.is_down) {
+		if(InContact()){
+//			unnormalised_movement.y = 1;
+			game_state->cam.velocity = 7.5f;
+		}
+	}
+	
 	v3 normalised_movement = Normalize(unnormalised_movement) * movement_speed * frame_delta;
 
-	if(game_input.move_up.is_down && game_input.move_up.transition_count == 1){
-		game_state->cam.velocity = 5.0f;
-	}
-
-//	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
-//	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
-//	normalised_movement.y = normalised_movement.y + delta_y;
-
-	b32 valid_movement = true;
-
-	OctTree* current = game_state->collision_tree;
+	game_state->cam.velocity = -9.8 * frame_delta * 2 + game_state->cam.velocity;
+	r32 delta_y = game_state->cam.velocity * frame_delta + (0.5f * 9.8 * frame_delta*frame_delta);
+	normalised_movement.y = normalised_movement.y + delta_y;
 
 	Entity* collision_entity;
 
-
 	v3 test_position = game_state->cam.world_p;
 	test_position.x += normalised_movement.x;
-	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, game_state->collision_tree)){
 		test_position.x -= normalised_movement.x;
 	}
 	test_position.y += normalised_movement.y;
-	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, game_state->collision_tree)){
 		test_position.y -= normalised_movement.y;
 		game_state->cam.velocity = 0;
 	}
 	test_position.z += normalised_movement.z;
-	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, current)){
+	if (collision_entity = CheckCollision(test_position, game_state->cam.bounding_box, game_state->collision_tree)){
 		test_position.z -= normalised_movement.z;
 	}
 
 	game_state->cam.world_p = test_position;
 
-	
 }
 
 
@@ -664,14 +787,22 @@ void InitRenderGroups(){
 
 		u32 debug_attribs[] = { 
 			Attribute_VertexPosition,
+			Attribute_Color
+		};
+
+		u32 ui_attribs[] = { 
+			Attribute_VertexPosition,
 			Attribute_Color,
+			Attribute_TextureCoordinates
 		};
 		game_state->render_groups[RenderGroups_Debug]  = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES, TextureMap_Atlas);
 
 		game_state->render_groups[RenderGroups_Raycast] = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/debug_vertex.hlsl", "c:/code/fps/src/shaders/debug_fragment.hlsl", GL_TRIANGLES, TextureMap_Atlas);
-		game_state->render_groups[RenderGroups_UI] = CreateRenderGroup(debug_attribs, ARRAYCOUNT(debug_attribs), "c:/code/fps/src/shaders/ui_vertex.hlsl", "c:/code/fps/src/shaders/ui_fragment.hlsl", GL_TRIANGLES, TextureMap_Atlas);
+
+		game_state->render_groups[RenderGroups_UI] = CreateRenderGroup(ui_attribs, ARRAYCOUNT(ui_attribs), "c:/code/fps/src/shaders/ui_vertex.hlsl", "c:/code/fps/src/shaders/ui_fragment.hlsl", GL_TRIANGLES, TextureMap_UI);
 
 }
+
 
 void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
 	TIMED_FUNCTION
@@ -691,6 +822,7 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 			SetUpGL();
 			InitRenderGroups();
 			game_state->raycast_collisions = Array(8, sizeof(Entity*));
+			CreateCollisionTree(Box { v3 { -10.0f, -10.0f, -10.0f }, v3{world_width+10.0f, world_height+10.0f, world_depth+10.0f} }, 3);
 			GenerateWorld(game_state->world);
 
 			for(int i = 0; i < world_width * world_height * world_depth; i ++){
@@ -698,21 +830,23 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 			}
 
 			game_state->cam.camera_dir = { 0, 0, 1 };
-			game_state->cam.world_p = { 5, 20, 5 };
+			game_state->cam.world_p = { 5, 10, 5 };
 			game_state->cam.bounding_box.min = v3 { -.1f, -1.5f, -.1f };
 			game_state->cam.bounding_box.max = v3 { +.1f, +.5f, +.1f };
 
 			game_state->client_dimensions.x = client_rect.right;
 			game_state->client_dimensions.y = client_rect.bottom;
 
-			Box b;
-			b.min = v3 { -1.0f/game_state->client_dimensions.x*10, -1.0f/game_state->client_dimensions.y, 0 };
-			b.max = v3 { 1.0f/game_state->client_dimensions.x*10, 1.0f/game_state->client_dimensions.y, 0 };
-			PushBox( game_state->render_groups[RenderGroups_UI], b, v3 { 1, 1, 1 });
+//			Box b;
+//			b.min = v3 { -1.0f/game_state->client_dimensions.x*10, -1.0f/game_state->client_dimensions.y, 0 };
+//			b.max = v3 { 1.0f/game_state->client_dimensions.x*10, 1.0f/game_state->client_dimensions.y, 0 };
+//			PushBox( game_state->render_groups[RenderGroups_UI], b, v3 { 1, 1, 1 });
+//
+//			b.min = v3 { -1.0f/game_state->client_dimensions.x, -1.0f/game_state->client_dimensions.y*10, 0};
+//			b.max = v3 { 1.0f/game_state->client_dimensions.x, 1.0f/game_state->client_dimensions.y*10, 0 };
+//			PushBox(game_state->render_groups[RenderGroups_UI], b, v3 { 1, 1, 1 });
 
-			b.min = v3 { -1.0f/game_state->client_dimensions.x, -1.0f/game_state->client_dimensions.y*10, 0};
-			b.max = v3 { 1.0f/game_state->client_dimensions.x, 1.0f/game_state->client_dimensions.y*10, 0 };
-			PushBox(game_state->render_groups[RenderGroups_UI], b, v3 { 1, 1, 1 });
+			PushRect(game_state->render_groups[RenderGroups_UI], Box { v3 { -1, -1, 0 }, v3 { 1, 1, 0 } }, Dimension_z, v3{0, 0, 0});
 
 			LoadAllTextures();
 		}
@@ -721,13 +855,8 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 			SetUpGL();
 		}
 
-//		DebugCollisionOutlines(game_state->render_groups[RenderGroups_Debug], octtree);
+		DebugCollisionOutlines(game_state->render_groups[RenderGroups_Debug], game_state->collision_tree);
 	}
-
-
-	game_state->render_groups[RenderGroups_Raycast]->vertex_data_bytes = 0;
-	game_state->render_groups[RenderGroups_Raycast]->vertex_data.count = 0;
-	game_state->render_groups[RenderGroups_Raycast]->vertex_count = 0;
 
 	v2 new_dimensions;
 	new_dimensions.x = (r32)client_rect.right - client_rect.left;
@@ -741,36 +870,12 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 
 	wglSwapInterval(1);
 
+	glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.3f, 0.0f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-	game_state->raycast_collisions.Clear();
-	CheckCollisionRayWorld(Raycast { game_state->cam.world_p, raycast * 20 }, game_state->collision_tree);
-
-	r32 distance = 1000000000.0f;
-	Entity* collided_entity = NULL;
-	for(u32 i = 0; i < game_state->raycast_collisions.count; i++){
-		Entity* e = ((Entity**)(game_state->raycast_collisions.data))[i];
-		v3 distance_to_entity = e->world_p - game_state->cam.world_p;
-		r32 magnitude = abs(Inner(distance_to_entity, distance_to_entity));
-		if(magnitude < distance){
-			collided_entity = e;
-			distance = magnitude;
-		}
-	}
-	if(collided_entity){
-		Box b;
-		b.min.x = collided_entity->world_p.x - 0.5f;
-		b.min.y = collided_entity->world_p.y - 0.5f;
-		b.min.z = collided_entity->world_p.z - 0.5f;
-		b.max.x = collided_entity->world_p.x + 0.5f;
-		b.max.y = collided_entity->world_p.y + 0.5f;
-		b.max.z = collided_entity->world_p.z + 0.5f;
-		PushBoxOutline(game_state->render_groups[RenderGroups_Raycast], b, 0.05f, v3{1, 0, 1});
-	}
 
 	DrawVertices(game_state->render_groups[RenderGroups_Raycast]);
 	DrawVertices(game_state->render_groups[RenderGroups_Debug]);

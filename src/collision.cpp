@@ -217,6 +217,11 @@ Entity* CheckCollision(v3 pos, Box bounding_box, OctTree* tree) {
 	return CheckCollision(&a, tree);
 }
 
+void CreateCollisionTree(Box b, u32 depth){
+	game_state->collision_tree = (OctTree*)Malloc(sizeof(OctTree));
+	game_state->collision_tree->Init(depth, b);
+}
+
 //b32 WithinBounds(Entity* a, Entity* b, Dimension d){
 //	TIMED_FUNCTION
 //	if(d == Dimension_x){

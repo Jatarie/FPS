@@ -29,6 +29,13 @@ struct IO{
 
 static IO* io;
 
+struct ColorRGBA8{
+	u8 r;
+	u8 g;
+	u8 b;
+	u8 a;
+};
+
 struct ColorRGBA{
     r32 r;
     r32 g;

@@ -444,9 +444,9 @@
          ShaderCreate("c:/code/fps/src/shaders/lighting_tests/test_lighting_vertex2.hlsl", "c:/code/fps/src/shaders/lighting_tests/test_lighting_fragment2.hlsl", &cube_shader);
          ShaderCreate("c:/code/fps/src/shaders/lighting_tests/test_lighting_cube_vertex2.hlsl", "c:/code/fps/src/shaders/lighting_tests/test_lighting_cube_fragment2.hlsl", &lighting_cube_shader);
 
-         specular_map = LoadTexture("c:/code/FPS/src/specular_map.bmp");
-         texture = LoadTexture("c:/code/FPS/src/box.bmp");
-         emission_map = LoadTexture("c:/code/FPS/src/emission_map.bmp");
+         specular_map = LoadTextureFromFile("c:/code/FPS/src/specular_map.bmp");
+         texture = LoadTextureFromFile("c:/code/FPS/src/box.bmp");
+         emission_map = LoadTextureFromFile("c:/code/FPS/src/emission_map.bmp");
 
          glGenVertexArrays(1, &vao);
          glGenVertexArrays(1, &light_vao);
@@ -611,9 +611,9 @@
          ShaderCreate("c:/code/fps/src/shaders/lighting_tests/test_lighting_vertex2.hlsl", "c:/code/fps/src/shaders/lighting_tests/test_lighting_fragment3.hlsl", &cube_shader);
          ShaderCreate("c:/code/fps/src/shaders/lighting_tests/test_lighting_cube_vertex2.hlsl", "c:/code/fps/src/shaders/lighting_tests/test_lighting_cube_fragment2.hlsl", &lighting_cube_shader);
 
-         specular_map = LoadTexture("c:/code/FPS/src/specular_map.bmp");
-         texture = LoadTexture("c:/code/FPS/src/box.bmp");
-         emission_map = LoadTexture("c:/code/FPS/src/emission_map.bmp");
+         specular_map = LoadTextureFromFile("c:/code/FPS/src/specular_map.bmp");
+         texture = LoadTextureFromFile("c:/code/FPS/src/box.bmp");
+         emission_map = LoadTextureFromFile("c:/code/FPS/src/emission_map.bmp");
 
          glGenVertexArrays(1, &vao);
          glGenVertexArrays(1, &light_vao);
@@ -836,9 +836,9 @@
          ShaderCreate("c:/code/fps/src/shaders/lighting_tests/test_lighting_vertex2.hlsl", "c:/code/fps/src/shaders/lighting_tests/test_lighting_fragmentmultiple.hlsl", &cube_shader);
          ShaderCreate("c:/code/fps/src/shaders/lighting_tests/test_lighting_cube_vertex2.hlsl", "c:/code/fps/src/shaders/lighting_tests/test_lighting_cube_fragment2.hlsl", &lighting_cube_shader);
 
-         specular_map = LoadTexture("c:/code/FPS/src/specular_map.bmp");
-         texture = LoadTexture("c:/code/FPS/src/box.bmp");
-         emission_map = LoadTexture("c:/code/FPS/src/emission_map.bmp");
+         specular_map = LoadTextureFromFile("c:/code/FPS/src/specular_map.bmp");
+         texture = LoadTextureFromFile("c:/code/FPS/src/box.bmp");
+         emission_map = LoadTextureFromFile("c:/code/FPS/src/emission_map.bmp");
 
          glGenVertexArrays(1, &vao);
          glGenVertexArrays(1, &light_vao);

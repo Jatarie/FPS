@@ -1,6 +1,6 @@
 @echo off
 
-set CommonCompilerFlags=-DDEBUG=1 -Od -W2 -FS -FC -Zi -nologo
+set CommonCompilerFlags=-DDEBUG=1 -Od -W2 -FS -FC -Zi -nologo /STACK:10000000
 
 REM IF "%myINIT%" == "" call vcvarsall.bat x64 && set myINIT=1
 
