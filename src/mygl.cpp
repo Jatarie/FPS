@@ -804,19 +804,7 @@ void InitRenderGroups(){
 }
 
 
-void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
-	TIMED_FUNCTION
-	persist b32 init = 0;
-	game_input = in_game_input;
-	frame_delta = in_frame_delta;
-
-	if (!init) {
-		srand(0);
-		init = 1;
-		SetMemoryArena(memory);
-
-		io = io_in;
-		if(memory->list[0].block_size == memory->list[0].max_block_size){
+void OnFirstLoad(HWND window, RECT client_rect){
 			game_state = (GameState*)Malloc(sizeof(GameState));
 			GetRenderContext(window);
 			SetUpGL();
@@ -837,6 +825,35 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 			game_state->client_dimensions.x = client_rect.right;
 			game_state->client_dimensions.y = client_rect.bottom;
 
+			PushRect(game_state->render_groups[RenderGroups_UI], Box { v3 { -1, -1, 0 }, v3 { 1, 1, 0 } }, Dimension_z, v3{0, 0, 0});
+
+			LoadAllTextures();
+}
+
+void OnRecompile(){
+	SetUpGL();
+}
+
+void OnResolutionChange(){
+	game_state->textures[TextureMap_UI] = GetUITexture();
+}
+
+
+void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta, Game_Input in_game_input, RECT client_rect) {
+	TIMED_FUNCTION
+	persist b32 init = 0;
+	game_input = in_game_input;
+	frame_delta = in_frame_delta;
+
+	if (!init) {
+		srand(0);
+		init = 1;
+		SetMemoryArena(memory);
+
+		io = io_in;
+		if(memory->list[0].block_size == memory->list[0].max_block_size){
+			OnFirstLoad(window, client_rect);
+
 //			Box b;
 //			b.min = v3 { -1.0f/game_state->client_dimensions.x*10, -1.0f/game_state->client_dimensions.y, 0 };
 //			b.max = v3 { 1.0f/game_state->client_dimensions.x*10, 1.0f/game_state->client_dimensions.y, 0 };
@@ -846,13 +863,10 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 //			b.max = v3 { 1.0f/game_state->client_dimensions.x, 1.0f/game_state->client_dimensions.y*10, 0 };
 //			PushBox(game_state->render_groups[RenderGroups_UI], b, v3 { 1, 1, 1 });
 
-			PushRect(game_state->render_groups[RenderGroups_UI], Box { v3 { -1, -1, 0 }, v3 { 1, 1, 0 } }, Dimension_z, v3{0, 0, 0});
-
-			LoadAllTextures();
 		}
 		else{
 			game_state = (GameState*)memory->memory;
-			SetUpGL();
+			OnRecompile();
 		}
 
 		DebugCollisionOutlines(game_state->render_groups[RenderGroups_Debug], game_state->collision_tree);
@@ -862,8 +876,12 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 	new_dimensions.x = (r32)client_rect.right - client_rect.left;
 	new_dimensions.y = (r32)client_rect.bottom - client_rect.top;
 	if (new_dimensions != game_state->client_dimensions) {
-		glViewport(0, 0, (GLuint)new_dimensions.x, (GLuint)new_dimensions.y);
+		v2 new_dimensions;
+		new_dimensions.x = (r32)client_rect.right - client_rect.left;
+		new_dimensions.y = (r32)client_rect.bottom - client_rect.top;
 		game_state->client_dimensions = new_dimensions;
+		glViewport(0, 0, (GLuint)new_dimensions.x, (GLuint)new_dimensions.y);
+		OnResolutionChange();
 	}
 
 	CameraMove();
@@ -875,7 +893,6 @@ void RenderGame(HWND window, IO* io_in, Memory_Arena* memory, r32 in_frame_delta
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.3f, 0.0f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
 	DrawVertices(game_state->render_groups[RenderGroups_Raycast]);
 	DrawVertices(game_state->render_groups[RenderGroups_Debug]);
